@@ -68,3 +68,24 @@ func (s *GRPCServer) ListProducts(ctx context.Context, req *pb.ListProductsReque
 	s.logger.Info("successfully retrieved all products", zap.Int("count", len(pbProducts)))
 	return &pb.ListProductsResponse{Products: pbProducts}, nil
 }
+
+func (s *GRPCServer) CreateProduct(ctx context.Context, req *pb.CreateProductRequest) (*pb.CreateProductResponse, error) {
+	s.logger.Info("received CreateProduct request", zap.String("name", req.GetName()))
+
+	if req.GetName() == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "product name cannot be empty")
+	}
+
+	product, err := s.service.CreateProduct(ctx, req.GetName())
+	if err != nil {
+		s.logger.Error("failed to create product via service", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "failed to create product")
+	}
+
+	return &pb.CreateProductResponse{
+		Product: &pb.Product{
+			Id:   string(product.ID),
+			Name: product.Name,
+		},
+	}, nil
+}

@@ -1,16 +1,25 @@
-# Catalog Service Ports
+# Catalog Service
 CATALOG_GRPC_PORT: ":50051"
 CATALOG_HTTP_PORT: ":8080"
 CATALOG_GRPC_ADDR: "127.0.0.1:50051"
 
-# Identity Service Ports
+# Identity Service
 IDENTITY_GRPC_PORT: ":50052"
 IDENTITY_HTTP_PORT: ":8081"
 IDENTITY_GRPC_ADDR: "127.0.0.1:50052"
 
-# Database URIs
+# Order service
+ORDER_GRPC_PORT: ":50053"
+ORDER_HTTP_PORT: ":8082"
+ORDER_GRPC_ADDR: "localhost:50053"
+
+# Databases
 MONGO_URI: "mongodb://omides248:123123@127.0.0.1:27017/?authSource=admin"
+
 POSTGRES_URI: "postgres://omides248:123123@127.0.0.1:5432/identity_db"
+POSTGRES_ORDER_URI: "postgres://omides248:123123@127.0.0.1:5432/order_db"
+
+REDIS_ADDR: "localhost:6379"
 
 # App Environment
 APP_ENV: "development"

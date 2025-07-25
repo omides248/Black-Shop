@@ -16,7 +16,13 @@ type userRepo struct {
 }
 
 func NewUserRepository(conn *pgx.Conn, logger *zap.Logger) (identity.UserRepository, error) {
-	_, err := conn.Exec(context.Background(), `
+
+	_, err := conn.Exec(context.Background(), `CREATE EXTENSION IF NOT EXISTS "pgcrypto";`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to enable pgcrypto extension: %w", err)
+	}
+
+	_, err = conn.Exec(context.Background(), `
 		CREATE TABLE IF NOT EXISTS users (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			name TEXT,
@@ -30,7 +36,7 @@ func NewUserRepository(conn *pgx.Conn, logger *zap.Logger) (identity.UserReposit
 
 	return &userRepo{
 		conn:   conn,
-		logger: logger.Named("postgres_repo"),
+		logger: logger.Named("postgres_user_repo"),
 	}, nil
 }
 

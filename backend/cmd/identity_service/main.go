@@ -1,4 +1,3 @@
-// file: backend/cmd/identity_service/main.go
 package main
 
 import (
@@ -41,13 +40,15 @@ func main() {
 
 func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 	// --- Database Connection ---
-	dbConn, err := pgx.Connect(ctx, cfg.PostgresURI)
+	appLogger.Info("connecting to PostgreSQL...")
+	dbConn, err := pgx.Connect(ctx, cfg.PostgresIdentityURI)
 	if err != nil {
-		return fmt.Errorf("failed to connect to postgres: %w", err)
+		return fmt.Errorf("failed to connect to PostgreSQL: %w", err)
 	}
 	defer func(dbConn *pgx.Conn, ctx context.Context) {
 		_ = dbConn.Close(ctx)
 	}(dbConn, ctx)
+	appLogger.Info("Successfully connected to PostgreSQL")
 
 	// --- Layers ---
 	userRepo, err := postgresql.NewUserRepository(dbConn, appLogger)
@@ -65,7 +66,7 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 	// --- Servers ---
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- runGRPCServer(cfg.IdentityGRPCPort, grpcHandler, appLogger)
+		errCh <- runGRPCServer(cfg.IdentityGRPCPort, grpcHandler, tokenManager, appLogger)
 	}()
 	go func() {
 		errCh <- runRESTGateway(ctx, cfg.IdentityHTTPPort, cfg.IdentityGRPCAddr, appLogger)
@@ -79,13 +80,13 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 	}
 }
 
-func runGRPCServer(port string, handler pb.IdentityServiceServer, appLogger *zap.Logger) error {
+func runGRPCServer(port string, handler pb.IdentityServiceServer, tokenManager *auth.TokenManager, appLogger *zap.Logger) error {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", port, err)
 	}
 
-	gRPCServer := grpc.NewServer()
+	gRPCServer := grpc.NewServer(grpc.UnaryInterceptor(tokenManager.AuthenticationInterceptor))
 	pb.RegisterIdentityServiceServer(gRPCServer, handler)
 
 	appLogger.Info("gRPC Server is running", zap.String("port", port))

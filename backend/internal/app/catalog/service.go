@@ -31,7 +31,7 @@ func (s *Service) GetProduct(ctx context.Context, id catalog.ProductID) (*catalo
 	return s.products.FindByID(ctx, id)
 }
 
-func (s *Service) GetAllProducts(ctx context.Context) ([]*catalog.Product, error) {
+func (s *Service) FindAllProducts(ctx context.Context) ([]*catalog.Product, error) {
 	s.logger.Info("getting all products")
 
 	products, err := s.products.FindAll(ctx)
@@ -44,15 +44,18 @@ func (s *Service) GetAllProducts(ctx context.Context) ([]*catalog.Product, error
 	return products, nil
 }
 
-func (s *Service) FindAllProducts(ctx context.Context) ([]*catalog.Product, error) {
-	s.logger.Info("getting all products")
+func (s *Service) CreateProduct(ctx context.Context, name string) (*catalog.Product, error) {
+	s.logger.Info("creating a new product", zap.String("name", name))
 
-	products, err := s.products.FindAll(ctx)
-	if err != nil {
-		s.logger.Error("failed to get all products from repository", zap.Error(err))
+	newProduct := &catalog.Product{
+		Name: name,
+	}
+
+	if err := s.products.Save(ctx, newProduct); err != nil {
+		s.logger.Error("failed to save product via repository", zap.Error(err))
 		return nil, err
 	}
 
-	s.logger.Info("successfully found all products", zap.Int("count", len(products)))
-	return products, nil
+	s.logger.Info("successfully created a new product", zap.String("product_id", string(newProduct.ID)))
+	return newProduct, nil
 }

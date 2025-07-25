@@ -59,15 +59,25 @@ func (s *Service) LoginUser(ctx context.Context, email, plainPassword string) (*
 		return nil, "", identity.ErrInvalidPassword
 	}
 
-	claims := auth.UserClaims{
-		UserID: string(user.ID),
-	}
-	token, err := s.tokenManager.Generate(claims)
+	userID := string(user.ID)
+	token, err := s.tokenManager.Generate(userID)
 	if err != nil {
-		s.logger.Error("failed to generate token for user", zap.String("user_id", string(user.ID)), zap.Error(err))
+		s.logger.Error("failed to generate token for user", zap.String("user_id", userID), zap.Error(err))
 		return nil, "", err
 	}
 
-	s.logger.Info("user logged in successfully and token generated", zap.String("user_id", string(user.ID)))
+	s.logger.Info("user logged in successfully and token generated", zap.String("user_id", userID))
 	return user, token, nil
+}
+
+func (s *Service) GetUserProfile(ctx context.Context, userID identity.UserID) (*identity.User, error) {
+	s.logger.Info("getting user profile", zap.String("user_id", string(userID)))
+
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		s.logger.Debug("failed to get user profile from repository", zap.String("user_id", string(userID)))
+		return nil, err
+	}
+
+	return user, nil
 }

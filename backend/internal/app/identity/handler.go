@@ -3,6 +3,7 @@ package identity
 import (
 	pb "black-shop-service/api/proto/v1"
 	"black-shop-service/internal/domain/identity"
+	"black-shop-service/pkg/contextkeys"
 	"context"
 	"errors"
 	"go.uber.org/zap"
@@ -65,5 +66,33 @@ func (s *GRPCServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Login
 			Email: user.Email,
 		},
 		Token: token,
+	}, nil
+}
+
+func (s *GRPCServer) GetMyProfile(ctx context.Context, req *pb.GetMyProfileRequest) (*pb.GetMyProfileResponse, error) {
+	s.logger.Info("received GetMyProfile request")
+
+	userIDString, err := contextkeys.GetUserIDFromContext(ctx)
+	if err != nil {
+		s.logger.Warn("GetMyProfile failed: userID not found in context")
+		return nil, status.Errorf(codes.Unauthenticated, "user is not authenticated")
+	}
+
+	userID := identity.UserID(userIDString)
+
+	user, err := s.service.GetUserProfile(ctx, userID)
+	if err != nil {
+		if errors.Is(err, identity.ErrUserNotFound) {
+			return nil, status.Errorf(codes.NotFound, "user profile not found")
+		}
+		return nil, status.Errorf(codes.Internal, "failed to retrieve user profile")
+	}
+
+	return &pb.GetMyProfileResponse{
+		User: &pb.User{
+			Id:    string(user.ID),
+			Name:  user.Name,
+			Email: user.Email,
+		},
 	}, nil
 }

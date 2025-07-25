@@ -21,6 +21,15 @@ message ListProductsResponse {
   repeated Product products = 1;
 }
 
+message CreateProductRequest {
+  string name = 1;
+}
+
+message CreateProductResponse {
+  Product product = 1;
+}
+
+
 service CatalogService {
   rpc GetProduct(GetProductRequest) returns (Product) {
     option (google.api.http) = {
@@ -31,6 +40,13 @@ service CatalogService {
   rpc ListProducts(ListProductsRequest) returns (ListProductsResponse) {
     option (google.api.http) = {
       get: "/v1/products"
+    };
+  }
+
+  rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse) {
+    option (google.api.http) = {
+      post: "/v1/products"
+      body: "*"
     };
   }
 }

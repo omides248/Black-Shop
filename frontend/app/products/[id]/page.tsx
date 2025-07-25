@@ -1,21 +1,16 @@
+import {catalogAPI} from "@/lib/api/client";
+
 async function getProduct(id: string) {
     try {
-        const res = await fetch(`http://127.0.0.1:8080/v1/products/${id}`, {
-            cache: 'no-store',
-        });
-
-        if (!res.ok) {
-            throw new Error('Failed to fetch product');
-        }
-
-        return await res.json();
+        const data = await catalogAPI.getProduct(id);
+        return data;
     } catch (error) {
         console.error("Error fetching product:", error);
         return null;
     }
 }
 
-export default async function ProductPage({ params }: { params: any }) {
+export default async function ProductPage({params}: { params: any }) {
     const id = (await params)?.id;
 
     const product = await getProduct(id);

@@ -11,7 +11,7 @@ go get github.com/jackc/pgx/v5
 
 git clone https://github.com/googleapis/googleapis.git third_party/googleapis
 
-protoc --proto_path=. --proto_path=third_party/googleapis --go_out=. --go-grpc_out=. --grpc-gateway_out=. api/proto/v1/catalog_service.proto api/proto/v1/identity_service.proto
+protoc --proto_path=. --proto_path=third_party/googleapis --go_out=. --go-grpc_out=. --grpc-gateway_out=. api/proto/v1/catalog_service.proto api/proto/v1/identity_service.proto api/proto/v1/order_service.proto
 
 
 Catalog Service:

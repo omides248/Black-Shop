@@ -23,7 +23,7 @@ func NewProductRepository(db *mongo.Database, logger *zap.Logger) catalog.Produc
 	collection := db.Collection("products")
 	return &productRepo{
 		collection: collection,
-		logger:     logger.Named("mongodb_repo"),
+		logger:     logger.Named("mongodb_product_repo"),
 	}
 }
 

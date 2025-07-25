@@ -3,16 +3,27 @@ package config
 import "github.com/spf13/viper"
 
 type Config struct {
-	// Catalog
+	// Catalog Service
 	CatalogGRPCPort string `mapstructure:"CATALOG_GRPC_PORT"`
 	CatalogHTTPPort string `mapstructure:"CATALOG_HTTP_PORT"`
 	CatalogGRPCAddr string `mapstructure:"CATALOG_GRPC_ADDR"`
-	MongoURI        string `mapstructure:"MONGO_URI"`
-	// Identity
+
+	// Identity Service
 	IdentityGRPCPort string `mapstructure:"IDENTITY_GRPC_PORT"`
 	IdentityHTTPPort string `mapstructure:"IDENTITY_HTTP_PORT"`
 	IdentityGRPCAddr string `mapstructure:"IDENTITY_GRPC_ADDR"`
-	PostgresURI      string `mapstructure:"POSTGRES_URI"`
+
+	// Order Service
+	OrderGRPCPort string `mapstructure:"ORDER_GRPC_PORT"`
+	OrderHTTPPort string `mapstructure:"ORDER_HTTP_PORT"`
+	OrderGRPCAddr string `mapstructure:"ORDER_GRPC_ADDR"`
+
+	// Database
+	MongoURI            string `mapstructure:"MONGO_URI"`
+	PostgresIdentityURI string `mapstructure:"POSTGRES_IDENTITY_URI"`
+	PostgresOrderURI    string `mapstructure:"POSTGRES_ORDER_URI"`
+	RedisAddr           string `mapstructure:"REDIS_ADDR"`
+
 	// General
 	AppEnv string `mapstructure:"APP_ENV"`
 }

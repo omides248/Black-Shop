@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import {identityAPI} from "@/lib/api/client";
 
 export interface FormState {
     error: string | null;
@@ -16,21 +17,7 @@ export async function loginUser(
     const password = formData.get("password") as string;
 
     try {
-        const res = await fetch("http://localhost:8081/v1/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            return {
-                error: data.message || "Failed to login.",
-                success: false,
-            };
-        }
-
+        const data = await identityAPI.login({ email, password });
         const token = data.token;
         if (token) {
             const cookieStore = await cookies();
@@ -46,7 +33,7 @@ export async function loginUser(
         }
 
     } catch (error) {
-        console.error("Login error:", error);
+        console.error("Login action error:", error);
         return { error: "An unexpected error occurred.", success: false };
     }
 

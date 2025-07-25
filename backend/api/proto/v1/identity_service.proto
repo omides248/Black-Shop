@@ -13,6 +13,7 @@ message User {
   string email = 3;
 }
 
+// --- Register ----
 message RegisterRequest {
   string name = 1;
   string email = 2;
@@ -23,6 +24,7 @@ message RegisterResponse {
   User user = 1;
 }
 
+// --- Login ---
 message LoginRequest {
   string email = 1;
   string password = 2;
@@ -33,6 +35,14 @@ message LoginResponse {
   string token = 2;
 }
 
+// --- Get My Profile ---
+message GetMyProfileRequest{}
+
+message GetMyProfileResponse{
+  User user = 1;
+}
+
+// --- Service ---
 service IdentityService {
   rpc Register(RegisterRequest) returns (RegisterResponse) {
     option (google.api.http) = {
@@ -45,6 +55,12 @@ service IdentityService {
     option (google.api.http) = {
       post: "/v1/auth/login"
       body: "*"
+    };
+  }
+
+  rpc GetMyProfile(GetMyProfileRequest) returns (GetMyProfileResponse) {
+    option (google.api.http) = {
+      get: "/v1/users/me"
     };
   }
 }

@@ -74,7 +74,7 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 }
 
 func setupDatabase(ctx context.Context, uri string, appLogger *zap.Logger) (*mongo.Database, error) {
-	appLogger.Info("connecting to MongoDB...", zap.String("uri", uri))
+	appLogger.Info("connecting to MongoDB...")
 
 	connectCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
