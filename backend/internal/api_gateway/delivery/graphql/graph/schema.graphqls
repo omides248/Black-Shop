@@ -1,0 +1,21 @@
+type Category {
+  id: ID!
+  name: String!
+  image_url: String
+  parent_id: String
+  depth: Int!
+}
+
+input CreateCategoryInput {
+  name: String!
+  image_url: String
+  parent_id: String
+}
+
+type Query {
+  listCategories: [Category!]!
+}
+
+type Mutation {
+  createCategory(input: CreateCategoryInput!): Category!
+}

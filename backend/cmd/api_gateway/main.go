@@ -3,11 +3,13 @@ package main
 import (
 	pbcatalog "black-shop/api/proto/catalog/v1"
 	pbidentity "black-shop/api/proto/identity/v1"
-	"black-shop/internal/api_gateway/router"
+	"black-shop/internal/api_gateway/delivery/rest/router"
 	"black-shop/pkg/config"
 	"black-shop/pkg/logger"
 	"context"
 	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -26,7 +28,7 @@ func main() {
 	}(appLogger)
 
 	if err := run(context.Background(), cfg, appLogger); err != nil {
-		appLogger.Fatal("catalog-service failed to run", zap.Error(err))
+		appLogger.Fatal("api-gateway failed to run", zap.Error(err))
 	}
 }
 
@@ -54,10 +56,17 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 	}(identityConn)
 	identityClient := pbidentity.NewIdentityServiceClient(identityConn)
 
-	r := router.Setup(catalogClient, identityClient)
+	e := echo.New()
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+
+	// Register REST routes
+	router.SetupRest(e, catalogClient, identityClient)
+
+	// Register GraphQL routes
+	router.SetupGraphQL(e, catalogClient)
 
 	httpPort := ":8080"
-	appLogger.Info("Echo API Gateway is running", zap.String("port", httpPort))
-	return r.Start(httpPort)
-
+	appLogger.Info("Echo API Gateway is running on", zap.String("port", httpPort))
+	return e.Start(httpPort)
 }
