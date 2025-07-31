@@ -13,9 +13,39 @@ git clone https://github.com/googleapis/googleapis.git third_party/googleapis
 
 protoc --proto_path=. --proto_path=third_party/googleapis --go_out=. --go-grpc_out=. --grpc-gateway_out=. api/proto/v1/catalog_service.proto api/proto/v1/identity_service.proto api/proto/v1/order_service.proto
 
+protoc --proto_path=. --proto_path=third_party/googleapis --go_out=. --go-grpc_out=. --grpc-gateway_out=. $(find api/proto/v1 -name "*.proto")
+
+protoc --proto_path=. --proto_path=third_party/googleapis --go_out=. --go-grpc_out=. --grpc-gateway_out=. api/proto/v1/*.proto
+
+
+
+
+protoc --proto_path=api/proto --proto_path=../third_party/googleapis --go_out=api/proto --go-grpc_out=api/proto --grpc-gateway_out=api/proto api/proto/catalog/v1/*.proto
+
+protoc \
+--proto_path=api/proto \
+--proto_path=../third_party/googleapis \
+--go_out=api/proto \
+--go-grpc_out=api/proto \
+--grpc-gateway_out=api/proto \
+$(find api/proto -name "*.proto")
+
+
 
 Catalog Service:
 go ./cmd/catalog_service/main.go
 
 Identity Service:
 go ./cmd/identity_service/main.go
+
+Order Service:
+go ./cmd/identity_service/main.go
+
+
+
+
+go run github.com/99designs/gqlgen generate
+
+
+make up
+make down

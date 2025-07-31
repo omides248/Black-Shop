@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package catalog.v1;
+
+option go_package = "catalog/v1;v1";
+
+
+message Category {
+  string id = 1;
+  string name = 2;
+  optional string image_url = 3;
+  optional string parent_id = 4;
+  int32 depth = 5;
+}
+
+message CreateCategoryRequest {
+  string name = 1;
+  optional string image_url = 2;
+  optional string parent_id = 3;
+}
+
+message CreateCategoryResponse {
+  Category category = 1;
+}
+
+message ListCategoriesRequest {}
+
+message ListCategoriesResponse {
+  repeated Category categories = 1;
+}

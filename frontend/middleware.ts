@@ -21,8 +21,9 @@ export const config = {
          * - _next/image (image optimization files)
          * - favicon.ico (favicon file)
          * - /auth (login/register pages)
+         * - /admin (admin panel pages
          * - / (homepage)
          */
-        '/((?!api|_next/static|_next/image|favicon.ico|auth|$).*)',
+        '/((?!api|_next/static|_next/image|favicon.ico|auth|admin|$).*)',
     ],
 }

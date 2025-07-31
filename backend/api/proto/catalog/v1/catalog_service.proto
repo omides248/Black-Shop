@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package catalog.v1;
+
+option go_package = "catalog/v1;v1";
+
+import "catalog/v1/product.proto";
+import "catalog/v1/category.proto";
+
+
+service CatalogService {
+
+  // Product Methods
+  rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
+  rpc GetProduct(GetProductRequest) returns (Product);
+  rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
+
+  // Category Methods
+  rpc CreateCategory(CreateCategoryRequest) returns (CreateCategoryResponse);
+  rpc ListCategories(ListCategoriesRequest) returns (ListCategoriesResponse);
+}

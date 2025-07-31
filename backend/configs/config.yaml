@@ -16,7 +16,7 @@ ORDER_GRPC_ADDR: "localhost:50053"
 # Databases
 MONGO_URI: "mongodb://omides248:123123@127.0.0.1:27017/?authSource=admin"
 
-POSTGRES_URI: "postgres://omides248:123123@127.0.0.1:5432/identity_db"
+POSTGRES_IDENTITY_URI: "postgres://omides248:123123@127.0.0.1:5432/identity_db"
 POSTGRES_ORDER_URI: "postgres://omides248:123123@127.0.0.1:5432/order_db"
 
 REDIS_ADDR: "localhost:6379"

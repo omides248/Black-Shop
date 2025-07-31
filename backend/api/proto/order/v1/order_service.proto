@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "order/v1;v1";
+
+
+// --- Cart ---
+message CartItem {
+  string product_id = 1;
+  int32 quantity = 2;
+}
+
+message Cart {
+  string user_id = 1;
+  repeated CartItem items = 2;
+}
+
+
+message AddItemToCartRequest {
+  string product_id = 1;
+  int32 quantity = 2;
+}
+
+message GetCartRequest {} // Get user_id from token and find user cart
+
+// --- Order ---
+message OrderItem {
+  string product_id = 1;
+  int32 quantity = 2;
+  double price = 3;
+}
+
+message Order {
+  string id = 1;
+  string user_id = 2;
+  repeated OrderItem items = 3;
+  double total_price = 4;
+  string status = 5;
+}
+
+message CreateOrderFromCartRequest {} // Get user_id from token and find user cart and register order
+
+message CreateOrderFromCartResponse {
+  Order order = 1;
+}
+
+// --- Service ---
+service OrderService {
+  rpc AddItemToCart(AddItemToCartRequest) returns (Cart);
+
+  rpc GetCart(GetCartRequest) returns (Cart);
+
+  rpc CreateOrderFromCart(CreateOrderFromCartRequest) returns (CreateOrderFromCartResponse);
+
+}
+
+
+

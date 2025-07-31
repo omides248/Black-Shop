@@ -15,13 +15,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "black-shop-service/api/proto/v1"
-	"black-shop-service/internal/adapters/storage/postgresql"
-	redisStorage "black-shop-service/internal/adapters/storage/redis"
-	"black-shop-service/internal/app/order"
-	"black-shop-service/pkg/auth"
-	"black-shop-service/pkg/config"
-	"black-shop-service/pkg/logger"
+	pb "black-shop/api/proto/v1"
+	"black-shop/internal/adapters/storage/postgresql"
+	redisStorage "black-shop/internal/adapters/storage/redis"
+	"black-shop/internal/app/order"
+	"black-shop/pkg/auth"
+	"black-shop/pkg/config"
+	"black-shop/pkg/logger"
 )
 
 func main() {

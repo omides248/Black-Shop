@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"black-shop-service/pkg/contextkeys"
+	"black-shop/pkg/contextkeys"
 	"context"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
