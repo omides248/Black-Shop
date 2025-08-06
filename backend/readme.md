@@ -48,3 +48,89 @@ go run github.com/99designs/gqlgen generate
 
 make up
 make down
+
+
+
+
+
+# Structure
+
+D:.
+│   .gitignore
+│   go.work
+│   Makefile
+│   readme.md
+│   tools.go
+│
+├───api_gateway
+│   │   go.mod
+│   │   go.sum
+│   │   main.go
+│   │
+│   └───internal
+│       └───delivery
+│
+├───catalog
+│   │   go.mod
+│   │   go.sum
+│   │   main.go
+│   │
+│   ├───api
+│   │   └───v1
+│   │           catalog_service.proto
+│   │           ...
+│   │
+│   └───internal
+│       ├───adapters
+│       ├───application
+│       ├───delivery
+│       └───domain
+│
+├───identity
+│   │   go.mod
+│   │   go.sum
+│   │   main.go
+│   │
+│   ├───api
+│   │   └───v1
+│   │           identity_service.proto
+│   │
+│   └───internal
+│       ├───adapters
+│       ├───application
+│       ├───delivery
+│       └───domain
+│
+├───order
+│   │   go.mod
+│   │   go.sum
+│   │   main.go
+│   │
+│   ├───api
+│   │   └───v1
+│   │           order_service.proto
+│   │
+│   └───internal
+│       ├───adapters
+│       ├───application
+│       ├───delivery
+│       └───domain
+│
+├───pkg
+│   ├───auth
+│   │   │   go.mod
+│   │   │   jwt.go
+│   │
+│   ├───config
+│   │   │   go.mod
+│   │   │   config.go
+│   │
+│   └───logger
+│       │   go.mod
+│       │   logger.go
+│
+├───build
+├───configs
+├───deployments
+├───scripts
+└───test

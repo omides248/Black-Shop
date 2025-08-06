@@ -13,6 +13,11 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: "0.75"
 
   postgres:
     image: postgres
@@ -25,6 +30,11 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./init-postgresql.sh:/docker-entrypoint-initdb.d/init-db.sh
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
 
   redis:
     image: redis
@@ -33,6 +43,11 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
 
 
 volumes:
@@ -41,3 +56,44 @@ volumes:
   redis-data:
 
 
+
+
+#services:
+#  mongo:
+#    image: mongo
+#    container_name: black-shop-mongo
+#    environment:
+#      - MONGO_INITDB_ROOT_USERNAME=omides248
+#      - MONGO_INITDB_ROOT_PASSWORD=123123
+#    ports:
+#      - "27017:27017"
+#    command: ["--replSet", "rs0", "--auth", "--keyFile", "/etc/mongo-keyfile"]
+#    volumes:
+#      - mongo-data:/data/db
+#      - ./mongo-keyfile:/etc/mongo-keyfile:ro
+#
+#  postgres:
+#    image: postgres
+#    container_name: black-shop-postgres
+#    environment:
+#      - POSTGRES_USER=omides248
+#      - POSTGRES_PASSWORD=123123
+#      - POSTGRES_DB=identity_db
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - postgres-data:/var/lib/postgresql/data
+#      - ./init-postgresql.sh:/docker-entrypoint-initdb.d/init-db.sh
+#
+#  redis:
+#    image: redis
+#    container_name: black-shop-redis
+#    ports:
+#      - "6379:6379"
+#    volumes:
+#      - redis-data:/data
+#
+#volumes:
+#  mongo-data:
+#  postgres-data:
+#  redis-data:
