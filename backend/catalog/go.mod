@@ -3,6 +3,7 @@ module catalog
 go 1.24.5
 
 require (
+	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/labstack/echo/v4 v4.13.4
 	go.mongodb.org/mongo-driver/v2 v2.2.3
 	go.uber.org/zap v1.27.0

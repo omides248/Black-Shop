@@ -3,6 +3,7 @@ package application
 import (
 	"catalog/internal/domain"
 	"context"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.uber.org/zap"
 )
 
@@ -28,10 +29,10 @@ func (s *productService) GetProduct(ctx context.Context, id domain.ProductID) (*
 	return s.productRepo.FindByID(ctx, id)
 }
 
-func (s *productService) FindAllProducts(ctx context.Context, page, limit int) ([]*domain.Product, int64, error) {
+func (s *productService) FindAllProducts(ctx context.Context, filterQuery bson.M, sortOptions bson.D, page, limit int) ([]*domain.Product, int64, error) {
 	s.logger.Info("getting all products")
 
-	products, total, err := s.productRepo.FindAll(ctx, page, limit)
+	products, total, err := s.productRepo.FindAll(ctx, filterQuery, sortOptions, page, limit)
 	if err != nil {
 		s.logger.Error("failed to get all products from repository", zap.Error(err))
 		return nil, 0, err

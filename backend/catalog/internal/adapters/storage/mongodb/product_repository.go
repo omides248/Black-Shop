@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.uber.org/zap"
 )
 
@@ -62,50 +61,68 @@ func (r *productRepo) FindByID(ctx context.Context, id domain.ProductID) (*domai
 	}, nil
 }
 
-func (r *productRepo) FindAll(ctx context.Context, page, limit int) ([]*domain.Product, int64, error) {
+func (r *productRepo) FindAll(ctx context.Context, filterQuery bson.M, sortOptions bson.D, page, limit int) ([]*domain.Product, int64, error) {
 	r.logger.Info("finding all products")
 
 	offset := (page - 1) * limit
 
-	// TODO Use one aggregate query instead collection.CountDocuments() and  r.collection.Find(ctx, filter, opts)
-
-	total, err := r.collection.CountDocuments(ctx, bson.M{})
-	if err != nil {
-		return nil, 0, err
+	matchStage := bson.D{{"$match", filterQuery}}
+	dataStage := bson.A{
+		bson.D{{"$sort", sortOptions}},
+		bson.D{{"$skip", int64(offset)}},
+		bson.D{{"$limit", int64(limit)}},
 	}
+	countStage := bson.A{
+		bson.D{{"$count", "count"}},
+	}
+	facetStage := bson.D{{"$facet", bson.M{
+		"data":       dataStage,
+		"totalCount": countStage,
+	}}}
 
-	var domainProducts []*domain.Product
+	pipeline := mongo.Pipeline{matchStage, facetStage}
 
-	filter := bson.M{}
-	opts := options.Find().SetSkip(int64(offset)).SetLimit(int64(limit))
-	cursor, err := r.collection.Find(ctx, filter, opts)
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
 	if err != nil {
-		r.logger.Error("failed to execute find all query", zap.Error(err))
-		return nil, 0, fmt.Errorf("failed to execute find all query: %w", err)
+		r.logger.Error("failed to execute aggregate query for products", zap.Error(err))
+		return nil, 0, err
 	}
 	defer func(cursor *mongo.Cursor, ctx context.Context) {
 		_ = cursor.Close(ctx)
 	}(cursor, ctx)
 
-	for cursor.Next(ctx) {
-		var p model.MongoProduct
-		if err := cursor.Decode(&p); err != nil {
-			r.logger.Error("failed to decode a product document", zap.Error(err))
-			continue
+	var results struct {
+		Data       []model.MongoProduct `bson:"data"`
+		TotalCount []struct {
+			Count int64 `bson:"count"`
+		} `bson:"totalCount"`
+	}
+
+	if cursor.Next(ctx) {
+		if err := cursor.Decode(&results); err != nil {
+			r.logger.Error("failed to decode product aggregation result", zap.Error(err))
+			return nil, 0, err
 		}
-		domainProducts = append(domainProducts, &domain.Product{
-			ID:   domain.ProductID(p.ID.Hex()),
-			Name: p.Name,
+	}
+
+	if len(results.Data) == 0 {
+		return []*domain.Product{}, 0, nil
+	}
+
+	var total int64
+	if len(results.TotalCount) > 0 {
+		total = results.TotalCount[0].Count
+	}
+
+	products := make([]*domain.Product, 0, len(results.Data))
+	for _, mongoProd := range results.Data {
+		products = append(products, &domain.Product{
+			ID:   domain.ProductID(mongoProd.ID.Hex()),
+			Name: mongoProd.Name,
 		})
 	}
 
-	if err := cursor.Err(); err != nil {
-		r.logger.Error("cursor error after iterating", zap.Error(err))
-		return nil, 0, fmt.Errorf("cursor iteration failed: %w", err)
-	}
-
-	r.logger.Info("successfully found all products", zap.Int("count", len(domainProducts)))
-	return domainProducts, total, nil
+	return products, total, nil
 }
 
 func (r *productRepo) Save(ctx context.Context, product *domain.Product) error {

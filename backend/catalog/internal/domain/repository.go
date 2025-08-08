@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type CategoryRepository interface {
@@ -17,7 +18,7 @@ type ProductRepository interface {
 	Save(ctx context.Context, product *Product) error
 	Update(ctx context.Context, product *Product) error
 	FindByID(ctx context.Context, id ProductID) (*Product, error)
-	FindAll(ctx context.Context, page, limit int) ([]*Product, int64, error)
+	FindAll(ctx context.Context, filterQuery bson.M, sortOptions bson.D, page, limit int) ([]*Product, int64, error)
 	CategoryHasProducts(ctx context.Context, id CategoryID) (bool, error)
 	// TODO: Add method for searching and filtering products
 }

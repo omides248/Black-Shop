@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"pkg/config"
 	"pkg/logger"
+	"pkg/validation"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -127,6 +128,8 @@ func runGRPCServer(port string, handler pb.CatalogServiceServer, appLogger *zap.
 func runHTTPServer(port string, catSvc application.CategoryService, prodSvc application.ProductService, appLogger *zap.Logger) error {
 	appLogger.Info("starting HTTP (Echo) server...", zap.String("port", port))
 	e := echo.New()
+
+	e.Validator = validation.New()
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())

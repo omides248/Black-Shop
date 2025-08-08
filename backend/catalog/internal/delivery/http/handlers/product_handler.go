@@ -3,14 +3,18 @@ package handlers
 import (
 	"catalog/internal/application"
 	"catalog/internal/domain"
+	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
+	"pkg/filter"
+	"pkg/http_errors"
 	"pkg/pagination"
 )
 
 type CreateProductRequest struct {
-	Name string `json:"name"  validate:"required,min=3"`
+	Name  string `json:"name"`
+	Price string `json:"price"`
 }
 
 type ProductResponse struct {
@@ -30,6 +34,15 @@ type PaginatedResponse struct {
 	Results  interface{} `json:"results"`
 }
 
+var productFilterSet = &filter.FilterSet{
+	FilterFields: map[string]string{
+		"category": "categoryId",
+		"brand":    "brandId",
+	},
+	SearchFields:   []string{"name", "description"},
+	OrderingFields: []string{"price", "created_at"},
+}
+
 func NewProductHandler(service application.ProductService, logger *zap.Logger) *ProductHandler {
 	return &ProductHandler{
 		service: service,
@@ -43,7 +56,9 @@ func (h *ProductHandler) CreateProduct(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
 
-	// TODO validate with thirty party library
+	if err := c.Validate(req); err != nil {
+		return http_errors.HandleValidationError(c, err)
+	}
 
 	productDomain, err := h.service.CreateProduct(c.Request().Context(), req.Name)
 	if err != nil {
@@ -60,7 +75,9 @@ func (h *ProductHandler) ListProducts(c echo.Context) error {
 	page := c.Get("page").(int)
 	limit := c.Get("size").(int)
 
-	products, total, err := h.service.FindAllProducts(c.Request().Context(), page, limit)
+	queryResult := productFilterSet.BuildMongoQuery(c)
+
+	products, total, err := h.service.FindAllProducts(c.Request().Context(), queryResult.FilterQuery, queryResult.SortOptions, page, limit)
 	if err != nil {
 		h.logger.Error("failed to find all products", zap.Error(err))
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "failed to retrieve products"})
@@ -81,4 +98,11 @@ func toProductResponse(product *domain.Product) ProductResponse {
 		ID:   string(product.ID),
 		Name: product.Name,
 	}
+}
+
+func (r CreateProductRequest) Validate() error {
+	return ozzo.ValidateStruct(&r,
+		ozzo.Field(&r.Name, ozzo.Required, ozzo.Length(3, 100)),
+		ozzo.Field(&r.Price, ozzo.Required),
+	)
 }
