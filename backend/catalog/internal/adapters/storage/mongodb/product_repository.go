@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.uber.org/zap"
 )
 
@@ -61,16 +62,26 @@ func (r *productRepo) FindByID(ctx context.Context, id domain.ProductID) (*domai
 	}, nil
 }
 
-func (r *productRepo) FindAll(ctx context.Context) ([]*domain.Product, error) {
+func (r *productRepo) FindAll(ctx context.Context, page, limit int) ([]*domain.Product, int64, error) {
 	r.logger.Info("finding all products")
+
+	offset := (page - 1) * limit
+
+	// TODO Use one aggregate query instead collection.CountDocuments() and  r.collection.Find(ctx, filter, opts)
+
+	total, err := r.collection.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return nil, 0, err
+	}
 
 	var domainProducts []*domain.Product
 
 	filter := bson.M{}
-	cursor, err := r.collection.Find(ctx, filter)
+	opts := options.Find().SetSkip(int64(offset)).SetLimit(int64(limit))
+	cursor, err := r.collection.Find(ctx, filter, opts)
 	if err != nil {
 		r.logger.Error("failed to execute find all query", zap.Error(err))
-		return nil, fmt.Errorf("failed to execute find all query: %w", err)
+		return nil, 0, fmt.Errorf("failed to execute find all query: %w", err)
 	}
 	defer func(cursor *mongo.Cursor, ctx context.Context) {
 		_ = cursor.Close(ctx)
@@ -90,11 +101,11 @@ func (r *productRepo) FindAll(ctx context.Context) ([]*domain.Product, error) {
 
 	if err := cursor.Err(); err != nil {
 		r.logger.Error("cursor error after iterating", zap.Error(err))
-		return nil, fmt.Errorf("cursor iteration failed: %w", err)
+		return nil, 0, fmt.Errorf("cursor iteration failed: %w", err)
 	}
 
 	r.logger.Info("successfully found all products", zap.Int("count", len(domainProducts)))
-	return domainProducts, nil
+	return domainProducts, total, nil
 }
 
 func (r *productRepo) Save(ctx context.Context, product *domain.Product) error {
@@ -128,11 +139,6 @@ func (r *productRepo) CategoryHasProducts(ctx context.Context, id domain.Categor
 
 	}
 	return count > 0, nil
-}
-
-func (r *productRepo) Create(ctx context.Context, product *domain.Product) error {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (r *productRepo) Update(ctx context.Context, product *domain.Product) error {

@@ -4,9 +4,13 @@ import (
 	"catalog/internal/adapters/storage/mongodb"
 	"catalog/internal/application"
 	"context"
+	"errors"
 	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"log"
 	"net"
+	"net/http"
 	"pkg/config"
 	"pkg/logger"
 	"time"
@@ -19,6 +23,7 @@ import (
 	pb "catalog/api/proto/v1"
 
 	grpcserver "catalog/internal/delivery/grpc"
+	httpserver "catalog/internal/delivery/http/router"
 )
 
 func main() {
@@ -72,10 +77,15 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 	// --- Delivery Layer (gRPC Handler) ---
 	grpcServerHandler := grpcserver.NewServer(grpcServerDeps, appLogger)
 
-	// Setup Servers
+	// Setup gRPC
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- runGRPCServer(cfg.CatalogGRPCPort, grpcServerHandler, appLogger)
+	}()
+
+	// Setup Echo
+	go func() {
+		errCh <- runHTTPServer(cfg.CatalogHTTPPort, categoryService, productService, appLogger)
 	}()
 
 	select {
@@ -87,7 +97,7 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 }
 
 func setupDatabase(ctx context.Context, uri string, appLogger *zap.Logger) (*mongo.Database, error) {
-	appLogger.Info("connecting to MongoDB...", zap.String("uri", uri))
+	appLogger.Info("connecting to MongoDB...")
 	connectCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	clientOpts := options.Client().ApplyURI(uri)
@@ -103,6 +113,7 @@ func setupDatabase(ctx context.Context, uri string, appLogger *zap.Logger) (*mon
 }
 
 func runGRPCServer(port string, handler pb.CatalogServiceServer, appLogger *zap.Logger) error {
+	appLogger.Info("starting gRPC server...", zap.String("port", port))
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", port, err)
@@ -111,4 +122,20 @@ func runGRPCServer(port string, handler pb.CatalogServiceServer, appLogger *zap.
 	pb.RegisterCatalogServiceServer(gRPCServer, handler)
 	appLogger.Info("gRPC Server is running", zap.String("port", port))
 	return gRPCServer.Serve(lis)
+}
+
+func runHTTPServer(port string, catSvc application.CategoryService, prodSvc application.ProductService, appLogger *zap.Logger) error {
+	appLogger.Info("starting HTTP (Echo) server...", zap.String("port", port))
+	e := echo.New()
+
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+
+	httpserver.Setup(e, catSvc, prodSvc, appLogger)
+
+	appLogger.Info("HTTP (Echo) Server is running", zap.String("port", port))
+	if err := e.Start(port); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return fmt.Errorf("echo server failed: %w", err)
+	}
+	return nil
 }

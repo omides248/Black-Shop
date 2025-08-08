@@ -7,7 +7,7 @@ import (
 
 type ProductService interface {
 	GetProduct(ctx context.Context, id domain.ProductID) (*domain.Product, error)
-	FindAllProducts(ctx context.Context) ([]*domain.Product, error)
+	FindAllProducts(ctx context.Context, page, limit int) ([]*domain.Product, int64, error)
 	CreateProduct(ctx context.Context, name string) (*domain.Product, error)
 }
 

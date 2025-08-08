@@ -45,8 +45,8 @@ func ensureCategoryIndexes(ctx context.Context, collection *mongo.Collection) er
 	return nil
 }
 
-func (r *categoryRepo) Create(ctx context.Context, category *domain.Category) error {
-	r.logger.Info("creating category", zap.String("category_name", category.Name))
+func (r *categoryRepo) Save(ctx context.Context, category *domain.Category) error {
+	r.logger.Info("creating a new category", zap.String("category_name", category.Name))
 
 	mc := model.MongoCategory{
 		Name:      category.Name,

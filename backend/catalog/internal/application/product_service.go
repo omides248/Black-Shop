@@ -28,17 +28,17 @@ func (s *productService) GetProduct(ctx context.Context, id domain.ProductID) (*
 	return s.productRepo.FindByID(ctx, id)
 }
 
-func (s *productService) FindAllProducts(ctx context.Context) ([]*domain.Product, error) {
+func (s *productService) FindAllProducts(ctx context.Context, page, limit int) ([]*domain.Product, int64, error) {
 	s.logger.Info("getting all products")
 
-	products, err := s.productRepo.FindAll(ctx)
+	products, total, err := s.productRepo.FindAll(ctx, page, limit)
 	if err != nil {
 		s.logger.Error("failed to get all products from repository", zap.Error(err))
-		return nil, err
+		return nil, 0, err
 	}
 
 	s.logger.Info("successfully found all products", zap.Int("count", len(products)))
-	return products, nil
+	return products, total, nil
 }
 
 func (s *productService) CreateProduct(ctx context.Context, name string) (*domain.Product, error) {
@@ -48,7 +48,7 @@ func (s *productService) CreateProduct(ctx context.Context, name string) (*domai
 		Name: name,
 	}
 
-	if err := s.productRepo.Create(ctx, newProduct); err != nil {
+	if err := s.productRepo.Save(ctx, newProduct); err != nil {
 		s.logger.Error("failed to save product via repository", zap.Error(err))
 		return nil, err
 	}

@@ -42,7 +42,7 @@ func (s *categoryService) CreateCategory(ctx context.Context, name string, image
 		return nil, err
 	}
 
-	if err := s.categoryRepo.Create(ctx, newCategory); err != nil {
+	if err := s.categoryRepo.Save(ctx, newCategory); err != nil {
 		s.logger.Error("failed to create category via repository", zap.Error(err))
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (s *categoryService) validateParentCategory(ctx context.Context, parentID *
 	}
 
 	// Rule 1: Limit Depth
-	if parentCategory.Depth >= 1 {
+	if parentCategory.Depth >= 2 {
 		s.logger.Warn("depth limit exceeded", zap.Error(domain.ErrCategoryDepthLimitExceeded), zap.Int("parent_depth", parentCategory.Depth))
 		return nil, domain.ErrCategoryDepthLimitExceeded
 	}
