@@ -68,7 +68,7 @@ func buildCategoryTree(categories []*domain.Category) []*CategoryResponse {
 		return []*CategoryResponse{}
 	}
 
-	// Save Map
+	// Create Map
 	categoryMap := make(map[domain.CategoryID]*CategoryResponse)
 	for _, cat := range categories {
 		dto := &CategoryResponse{

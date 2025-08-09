@@ -29,6 +29,13 @@ type ProductVariant struct {
 	UpdatedAt  time.Time
 }
 
+type Image struct {
+	URL       string
+	AltText   string
+	IsPrimary bool
+	Order     int
+}
+
 type Attribute struct {
 	Name  string
 	Value string

@@ -66,7 +66,7 @@ func findChildrenSlow(allCategories []*Category, parentID CategoryID) []Category
 		// Find child for any parent base on ParentID
 		if cat.ParentID != nil && *cat.ParentID == parentID {
 
-			// Save child
+			// Create child
 			childNode := CategoryResponse{
 				ID:   cat.ID,
 				Name: cat.Name,

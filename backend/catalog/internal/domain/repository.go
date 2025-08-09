@@ -6,7 +6,7 @@ import (
 )
 
 type CategoryRepository interface {
-	Save(ctx context.Context, category *Category) error
+	Create(ctx context.Context, category *Category) error
 	Update(ctx context.Context, category *Category) error
 	FindByID(ctx context.Context, id CategoryID) (*Category, error)
 	FindAll(ctx context.Context) ([]*Category, error)
@@ -15,7 +15,7 @@ type CategoryRepository interface {
 }
 
 type ProductRepository interface {
-	Save(ctx context.Context, product *Product) error
+	Create(ctx context.Context, product *Product) error
 	Update(ctx context.Context, product *Product) error
 	FindByID(ctx context.Context, id ProductID) (*Product, error)
 	FindAll(ctx context.Context, filterQuery bson.M, sortOptions bson.D, page, limit int) ([]*Product, int64, error)

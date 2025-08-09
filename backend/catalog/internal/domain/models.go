@@ -3,12 +3,6 @@ package domain
 import "time"
 
 // Image Value Object
-type Image struct {
-	URL       string
-	AltText   string
-	IsPrimary bool
-	Order     int
-}
 
 type Tag struct {
 	ID        TagID

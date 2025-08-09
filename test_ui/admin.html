@@ -1,0 +1,287 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+// شبیه‌سازی کامپوننت‌ها و آیکون‌ها
+const Button = ({ children, variant, size, className, ...props }) => (
+<button className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background shadow-sm ${variant === 'destructive' ? 'bg-red-600 text-white hover:bg-red-700' : variant === 'outline' ? 'border border-gray-300 bg-white hover:bg-gray-50' : variant === 'ghost' ? 'hover:bg-gray-100' : 'bg-slate-900 text-white hover:bg-slate-800'} ${size === 'icon' ? 'h-9 w-9' : 'h-10 py-2 px-4'} ${className}`} {...props}>
+{children}
+</button>
+);
+const Input = ({ className, ...props }) => <input className={`flex h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${className}`} {...props} />;
+const Textarea = ({ className, ...props }) => <textarea className={`flex min-h-[80px] w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${className}`} {...props} />;
+const Card = ({ children, className }) => <div className={`rounded-xl border bg-card text-card-foreground shadow-sm ${className}`}>{children}</div>;
+const CardHeader = ({ children, className }) => <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>{children}</div>;
+const CardTitle = ({ children, className }) => <h3 className={`text-xl font-bold leading-none tracking-tight ${className}`}>{children}</h3>;
+const CardDescription = ({ children, className }) => <p className={`text-sm text-gray-500 ${className}`}>{children}</p>;
+const CardContent = ({ children, className }) => <div className={`p-6 pt-0 ${className}`}>{children}</div>;
+const Select = ({ children, ...props }) => <select className="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm" {...props}>{children}</select>;
+const Label = ({ className, ...props }) => <label className={`text-sm font-medium text-gray-700 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`} {...props} />;
+const Badge = ({ children, variant }) => <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${variant === 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>{children}</span>;
+const Table = ({ children, className }) => <div className="w-full overflow-auto"><table className={`w-full caption-bottom text-sm ${className}`}>{children}</table></div>;
+const TableHeader = ({ children }) => <thead className="[&_tr]:border-b">{children}</thead>;
+const TableBody = ({ children }) => <tbody className="[&_tr:last-child]:border-0">{children}</tbody>;
+const TableRow = ({ children, className }) => <tr className={`border-b transition-colors hover:bg-gray-50/50 data-[state=selected]:bg-muted ${className}`}>{children}</tr>;
+const TableHead = ({ children, className }) => <th className={`h-12 px-4 text-right align-middle font-medium text-muted-foreground ${className}`}>{children}</th>;
+const TableCell = ({ children, className }) => <td className={`p-4 align-middle ${className}`}>{children}</td>;
+const AlertDialog = ({ open, children }) => {
+if (!open) return null;
+return <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center"><div className="relative z-50 grid w-full max-w-lg gap-4 border p-6 shadow-lg rounded-lg bg-white" dir="rtl">{children}</div></div>;
+};
+const AlertDialogContent = ({ children }) => <div>{children}</div>;
+const AlertDialogHeader = ({ children }) => <div className="flex flex-col space-y-2 text-center sm:text-right">{children}</div>;
+const AlertDialogTitle = ({ children }) => <h3 className="text-lg font-semibold">{children}</h3>;
+const AlertDialogDescription = ({ children }) => <p className="text-sm text-muted-foreground">{children}</p>;
+const AlertDialogFooter = ({ children }) => <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 sm:space-x-reverse mt-4">{children}</div>;
+const AlertDialogCancel = ({ children, ...props }) => <Button variant="outline" {...props}>{children}</Button>;
+const AlertDialogAction = ({ children, ...props }) => <Button variant="destructive" {...props}>{children}</Button>;
+const Separator = () => <hr className="my-4 border-gray-200" />;
+
+// آیکون‌ها
+const PlusCircle = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>;
+const MoreHorizontal = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>;
+const Home = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+const Package = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 9.4a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0z"/><path d="M12 15H3l-1-5L2 2h20l-1 8h-9"/><path d="M12 15v7"/></svg>;
+const ShoppingCart = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.16"/></svg>;
+const Users = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+const Folder = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.22A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>;
+const Menu = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>;
+const UploadCloud = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>;
+const X = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+const Edit = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>;
+const Trash2 = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>;
+const ArrowRight = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>;
+
+
+// --- کامپوننت صفحه افزودن محصول ---
+const AddProductPage = ({ setView }) => {
+const [currentStep, setCurrentStep] = useState(1);
+const [formData, setFormData] = useState({
+name: '', description: '', category: '', brand: '', primaryImage: [],
+variants: [{ sku: '', price: '', stock: '', attributes: [{ name: 'رنگ', value: '' }], images: [] }]
+});
+const handleChange = (e, index, subIndex) => {
+const { name, value } = e.target;
+if (index !== undefined) {
+const newVariants = [...formData.variants];
+if (subIndex !== undefined) { newVariants[index].attributes[subIndex][name] = value; }
+else { newVariants[index][name] = value; }
+setFormData({ ...formData, variants: newVariants });
+} else { setFormData({ ...formData, [name]: value }); }
+};
+const handleFileChange = (files, variantIndex) => {
+if (variantIndex !== undefined) {
+const newVariants = [...formData.variants];
+newVariants[variantIndex].images = [...newVariants[variantIndex].images, ...files];
+setFormData({ ...formData, variants: newVariants });
+} else { setFormData({ ...formData, primaryImage: [...formData.primaryImage, ...files] }); }
+};
+const removeImage = (index, variantIndex) => {
+if (variantIndex !== undefined) {
+const newVariants = [...formData.variants];
+newVariants[variantIndex].images = newVariants[variantIndex].images.filter((_, i) => i !== index);
+setFormData({ ...formData, variants: newVariants });
+} else { setFormData({ ...formData, primaryImage: formData.primaryImage.filter((_, i) => i !== index) }); }
+};
+const addVariant = () => setFormData({ ...formData, variants: [...formData.variants, { sku: '', price: '', stock: '', attributes: [{ name: 'رنگ', value: '' }], images: [] }] });
+const removeVariant = (index) => setFormData({ ...formData, variants: formData.variants.filter((_, i) => i !== index) });
+const addAttribute = (variantIndex) => {
+const newVariants = [...formData.variants];
+newVariants[variantIndex].attributes.push({ name: '', value: '' });
+setFormData({ ...formData, variants: newVariants });
+};
+const removeAttribute = (variantIndex, attrIndex) => {
+const newVariants = [...formData.variants];
+newVariants[variantIndex].attributes = newVariants[variantIndex].attributes.filter((_, i) => i !== attrIndex);
+setFormData({ ...formData, variants: newVariants });
+};
+const nextStep = () => setCurrentStep(prev => prev < 3 ? prev + 1 : prev);
+const prevStep = () => setCurrentStep(prev => prev > 1 ? prev - 1 : prev);
+const handleSubmit = (e) => { e.preventDefault(); console.log("Final Data:", formData); alert("محصول ثبت شد!"); setView('list'); };
+const ImageUploader = ({ onFilesSelect, existingFiles = [], onRemove }) => (
+<div>
+    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md"><div className="space-y-1 text-center"><UploadCloud className="mx-auto h-12 w-12 text-gray-400" /><div className="flex text-sm text-gray-600"><label htmlFor={`file-upload-${Math.random()}`} className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500"><span>آپلود فایل</span><input id={`file-upload-${Math.random()}`} type="file" className="sr-only" multiple onChange={(e) => onFilesSelect(Array.from(e.target.files))} /></label><p className="pr-1">یا بکشید و رها کنید</p></div></div></div>
+    {existingFiles.length > 0 && (<div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">{existingFiles.map((file, index) => (<div key={index} className="relative"><img src={URL.createObjectURL(file)} alt={`Preview ${index}`} className="w-full h-24 object-cover rounded-md" /><button type="button" onClick={() => onRemove(index)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"><X className="w-3 h-3" /></button></div>))}</div>)}
+</div>
+);
+const ProgressBar = ({ currentStep }) => {
+const steps = ["اطلاعات اصلی", "انواع محصول", "بازبینی"];
+return (<div className="flex items-center justify-center mb-8">{steps.map((step, index) => {const stepNumber = index + 1; let statusClass = 'bg-gray-300 text-gray-600'; let textClass = 'text-gray-500'; if (stepNumber < currentStep) { statusClass = 'bg-green-500 text-white'; textClass = 'text-green-600'; } else if (stepNumber === currentStep) { statusClass = 'bg-indigo-600 text-white'; textClass = 'text-indigo-600'; } return (<React.Fragment key={step}><div className="flex items-center"><div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg transition-colors duration-300 ${statusClass}`}>{stepNumber}</div><p className={`mr-2 font-semibold transition-colors duration-300 ${textClass}`}>{step}</p></div>{index < steps.length - 1 && <div className="flex-auto border-t-2 border-gray-300 mx-4"></div>}</React.Fragment>);})}</div>);
+};
+const Step1 = () => (<div className="space-y-6"><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div><Label htmlFor="name" className="mb-1 block">نام محصول</Label><Input id="name" name="name" value={formData.name} onChange={handleChange}/></div><div><Label htmlFor="category" className="mb-1 block">دسته‌بندی</Label><Select id="category" name="category" value={formData.category} onChange={handleChange}><option value="">انتخاب کنید</option><option value="digital">کالای دیجیتال</option></Select></div></div><div><Label htmlFor="description" className="mb-1 block">توضیحات</Label><Textarea id="description" name="description" value={formData.description} onChange={handleChange} /></div><div><Label className="mb-1 block">تصویر اصلی محصول</Label><ImageUploader onFilesSelect={(files) => handleFileChange(files)} existingFiles={formData.primaryImage} onRemove={(index) => removeImage(index)} /></div></div>);
+const Step2 = () => (<div className="space-y-6">{formData.variants.map((variant, index) => (<div key={index} className="border border-gray-200 rounded-xl p-4 bg-gray-50/50"><div className="flex flex-row items-center justify-between mb-4"><h4 className="text-lg font-semibold">نوع محصول #{index + 1}</h4><Button type="button" variant="destructive" size="icon" onClick={() => removeVariant(index)}> <Trash2 className="h-4 w-4" /> </Button></div><div className="space-y-4"><div className="grid grid-cols-1 md:grid-cols-3 gap-4"><div><Label htmlFor={`sku-${index}`}>SKU</Label><Input id={`sku-${index}`} name="sku" value={variant.sku} onChange={(e) => handleChange(e, index)} /></div><div><Label htmlFor={`price-${index}`}>قیمت</Label><Input id={`price-${index}`} name="price" type="number" value={variant.price} onChange={(e) => handleChange(e, index)} /></div><div><Label htmlFor={`stock-${index}`}>موجودی</Label><Input id={`stock-${index}`} name="stock" type="number" value={variant.stock} onChange={(e) => handleChange(e, index)} /></div></div><Separator /><div><Label className="mb-2 block">ویژگی‌ها</Label>{variant.attributes.map((attr, attrIndex) => (<div key={attrIndex} className="flex items-center gap-2 mt-2"><Input name="name" value={attr.name} onChange={(e) => handleChange(e, index, attrIndex)} /><Input name="value" value={attr.value} onChange={(e) => handleChange(e, index, attrIndex)} /><Button type="button" variant="outline" size="icon" onClick={() => removeAttribute(index, attrIndex)}><Trash2 className="h-4 w-4 text-red-500" /></Button></div>))}<Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => addAttribute(index)}>افزودن ویژگی</Button></div><Separator /><div><Label className="mb-1 block">تصاویر این نوع</Label><ImageUploader onFilesSelect={(files) => handleFileChange(files, index)} existingFiles={variant.images} onRemove={(imgIndex) => removeImage(imgIndex, index)} /></div></div></div>))}<Button type="button" className="w-full border-dashed" variant="outline" onClick={addVariant}> <PlusCircle className="ml-2 h-4 w-4" /> افزودن نوع جدید </Button></div>);
+const Step3 = () => (<div className="space-y-6 bg-gray-50 p-6 rounded-lg"><div><h4 className="font-semibold text-lg text-gray-800 border-b pb-2 mb-2">اطلاعات اصلی</h4><p><strong>نام:</strong> {formData.name || '-'}</p><div className="mt-2"><strong>تصویر اصلی:</strong>{formData.primaryImage.length > 0 ? <img src={URL.createObjectURL(formData.primaryImage[0])} className="h-20 w-20 rounded-md object-cover mt-1" /> : <p className="text-sm text-gray-500">انتخاب نشده</p>}</div></div><div><h4 className="font-semibold text-lg text-gray-800 border-b pb-2 mb-2">انواع محصول</h4>{formData.variants.map((variant, index) => (<div key={index} className="mt-2 p-2 border-t"><p><strong>نوع #{index + 1}:</strong></p><p className="text-sm">SKU: {variant.sku}</p><div className="mt-2"><strong>تصاویر نوع:</strong><div className="flex gap-2 mt-1">{variant.images.length > 0 ? variant.images.map((img, i) => <img key={i} src={URL.createObjectURL(img)} className="h-16 w-16 rounded-md object-cover" />) : <p className="text-sm text-gray-500">انتخاب نشده</p>}</div></div></div>))}</div></div>);
+return (<Card><CardHeader><div className="flex justify-between items-center"><CardTitle>افزودن محصول جدید</CardTitle><Button variant="outline" onClick={() => setView('list')}><ArrowRight className="ml-2 h-4 w-4"/> بازگشت به لیست</Button></div></CardHeader><CardContent><ProgressBar currentStep={currentStep} /><form onSubmit={handleSubmit}><div className="mt-8">{currentStep === 1 && <Step1 />}{currentStep === 2 && <Step2 />}{currentStep === 3 && <Step3 />}</div><div className={`mt-8 flex ${currentStep === 1 ? 'justify-end' : 'justify-between'}`}>{currentStep > 1 && (<Button type="button" variant="outline" onClick={prevStep}>&rarr; مرحله قبل</Button>)}{currentStep < 3 && (<Button type="button" onClick={nextStep}>مرحله بعد &larr;</Button>)}{currentStep === 3 && (<Button type="submit" className="bg-green-600 hover:bg-green-700">ثبت نهایی محصول</Button>)}</div></form></CardContent></Card>);
+};
+
+// --- کامپوننت صفحه لیست محصولات ---
+const ProductListPage = ({ setView }) => {
+const allProducts = [
+{ id: 1, name: 'گوشی هوشمند مدل Pro X', sku: 'GP-X1-PRO', category: 'کالای دیجیتال', price: '32,500,000', stock: 120, status: 'منتشر شده' },
+{ id: 2, name: 'پیراهن مردانه نخی', sku: 'SH-M-COT-L', category: 'پوشاک', price: '890,000', stock: 45, status: 'پیش‌نویس' },
+{ id: 3, name: 'تلویزیون هوشمند 55 اینچ', sku: 'TV-S55-4K', category: 'لوازم خانگی', price: '25,000,000', stock: 80, status: 'منتشر شده' },
+];
+const ActionsMenu = ({ product, onDeleteClick }) => {
+const [isOpen, setIsOpen] = useState(false);
+const menuRef = useRef(null);
+useEffect(() => { const handleClickOutside = (event) => { if (menuRef.current && !menuRef.current.contains(event.target)) setIsOpen(false); }; document.addEventListener("mousedown", handleClickOutside); return () => document.removeEventListener("mousedown", handleClickOutside); }, []);
+return (<div className="relative" ref={menuRef}><Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)}><MoreHorizontal className="h-4 w-4" /></Button>{isOpen && (<div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg border z-10"><a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">ویرایش</a><button onClick={() => { onDeleteClick(product); setIsOpen(false); }} className="block w-full text-right px-4 py-2 text-sm text-red-600 hover:bg-gray-100">حذف</button></div>)}</div>);
+};
+const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+const [selectedProduct, setSelectedProduct] = useState(null);
+const [filters, setFilters] = useState({ search: '', category: 'all', status: 'all' });
+const handleDeleteClick = (product) => { setSelectedProduct(product); setDeleteDialogOpen(true); };
+const handleFilterChange = (e) => { const { name, value } = e.target; setFilters(prev => ({ ...prev, [name]: value })); };
+const filteredProducts = allProducts.filter(p => (p.name.toLowerCase().includes(filters.search.toLowerCase())) && (filters.category === 'all' || p.category === filters.category) && (filters.status === 'all' || p.status === filters.status));
+return (<><Card className="w-full"><CardHeader><div className="flex justify-between items-center"><CardTitle>مدیریت محصولات</CardTitle><Button onClick={() => setView('add')}><PlusCircle className="ml-2 h-4 w-4" /> افزودن محصول</Button></div></CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"><Input name="search" placeholder="جستجو..." value={filters.search} onChange={handleFilterChange} /><Select name="category" value={filters.category} onChange={handleFilterChange}><option value="all">همه دسته‌بندی‌ها</option><option value="کالای دیجیتال">کالای دیجیتال</option></Select><Select name="status" value={filters.status} onChange={handleFilterChange}><option value="all">همه وضعیت‌ها</option><option value="منتشر شده">منتشر شده</option></Select></div><Table><TableHeader><TableRow><TableHead className="hidden sm:table-cell">تصویر</TableHead><TableHead>نام</TableHead><TableHead>وضعیت</TableHead><TableHead className="hidden md:table-cell">قیمت</TableHead><TableHead>عملیات</TableHead></TableRow></TableHeader><TableBody>{filteredProducts.map((product) => (<TableRow key={product.id}><TableCell className="hidden sm:table-cell"><img alt="Product" className="aspect-square rounded-md object-cover" height="64" src={`https://placehold.co/64x64/E2E8F0/4A5568?text=P${product.id}`} width="64" /></TableCell><TableCell className="font-medium">{product.name}</TableCell><TableCell><Badge variant={product.status === 'منتشر شده' ? 'default' : 'warning'}>{product.status}</Badge></TableCell><TableCell className="hidden md:table-cell">{product.price} تومان</TableCell><TableCell><ActionsMenu product={product} onDeleteClick={handleDeleteClick} /></TableCell></TableRow>))}</TableBody></Table></CardContent></Card><AlertDialog open={isDeleteDialogOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>آیا مطمئن هستید؟</AlertDialogTitle><AlertDialogDescription>محصول "{selectedProduct?.name}" برای همیشه حذف خواهد شد.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>انصراف</AlertDialogCancel><AlertDialogAction onClick={() => { console.log(`Deleting product: ${selectedProduct?.name}`); setDeleteDialogOpen(false); }}>بله، حذف کن</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></>);
+};
+
+// --- کامپوننت صفحه مدیریت دسته‌بندی‌ها ---
+const CategoryPage = () => {
+const initialCategories = [
+{ id: '1', name: 'کالای دیجیتال', parentId: null, depth: 0 },
+{ id: '2', name: 'موبایل', parentId: '1', depth: 1 },
+{ id: '3', name: 'گوشی هوشمند', parentId: '2', depth: 2 },
+{ id: '4', 'name': 'لپتاپ', parentId: '1', depth: 1 },
+{ id: '5', name: 'پوشاک', parentId: null, depth: 0 },
+{ id: '6', name: 'مردانه', parentId: '5', depth: 1 },
+];
+const ImageUploader = ({ onFileSelect, existingFile, onRemove }) => (
+<div>
+    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md"><div className="space-y-1 text-center"><UploadCloud className="mx-auto h-12 w-12 text-gray-400" /><div className="flex text-sm text-gray-600"><label htmlFor="file-upload-cat" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500"><span>آپلود فایل</span><input id="file-upload-cat" type="file" className="sr-only" onChange={(e) => onFileSelect(e.target.files[0])} /></label></div></div></div>
+    {existingFile && (<div className="mt-4 relative w-24 h-24"><img src={URL.createObjectURL(existingFile)} alt="Preview" className="w-full h-full object-cover rounded-md" /><button type="button" onClick={onRemove} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"><X className="w-3 h-3" /></button></div>)}
+</div>
+);
+const CategoryTreeItem = ({ category, onEdit, onDelete, level = 0 }) => (
+<div className="flex items-center justify-between p-2 rounded-md hover:bg-gray-100">
+    <p style={{ marginRight: `${level * 20}px` }}>{category.name}</p>
+    <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" onClick={() => onEdit(category)}><Edit className="h-4 w-4 text-blue-600" /></Button>
+        <Button variant="ghost" size="icon" onClick={() => onDelete(category)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
+    </div>
+</div>
+);
+const CategoryTree = ({ categories, onEdit, onDelete }) => {
+const buildTree = (parentId = null) => {
+return categories.filter(cat => cat.parentId === parentId).map(cat => (<div key={cat.id}><CategoryTreeItem category={cat} onEdit={onEdit} onDelete={onDelete} level={cat.depth} />{buildTree(cat.id)}</div>));
+};
+return <div className="space-y-1">{buildTree()}</div>;
+};
+const [categories, setCategories] = useState(initialCategories);
+const [editingCategory, setEditingCategory] = useState(null);
+const [formData, setFormData] = useState({ name: '', parentId: '', image: null });
+useEffect(() => {
+if (editingCategory) { setFormData({ name: editingCategory.name, parentId: editingCategory.parentId || '', image: null }); }
+else { setFormData({ name: '', parentId: '', image: null }); }
+}, [editingCategory]);
+const handleFormSubmit = (e) => {
+e.preventDefault();
+if (editingCategory) {
+setCategories(categories.map(c => c.id === editingCategory.id ? { ...c, name: formData.name, parentId: formData.parentId || null } : c));
+} else {
+const newCategory = { id: Date.now().toString(), name: formData.name, parentId: formData.parentId || null, depth: formData.parentId ? categories.find(c => c.id === formData.parentId).depth + 1 : 0 };
+setCategories([...categories, newCategory]);
+}
+setEditingCategory(null);
+};
+const handleCancelEdit = () => setEditingCategory(null);
+return (
+<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="lg:col-span-1">
+        <Card>
+            <CardHeader><CardTitle>{editingCategory ? 'ویرایش دسته‌بندی' : 'افزودن دسته‌بندی جدید'}</CardTitle></CardHeader>
+            <CardContent>
+                <form onSubmit={handleFormSubmit} className="space-y-4">
+                    <div><Label htmlFor="name">نام دسته‌بندی</Label><Input id="name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required /></div>
+                    <div><Label htmlFor="parentId">دسته‌بندی والد</Label><Select id="parentId" value={formData.parentId} onChange={e => setFormData({...formData, parentId: e.target.value})}><option value="">-- بدون والد (اصلی) --</option>{categories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}</Select></div>
+                    <div><Label>تصویر دسته‌بندی</Label><ImageUploader onFileSelect={file => setFormData({...formData, image: file})} existingFile={formData.image} onRemove={() => setFormData({...formData, image: null})} /></div>
+                    <div className="flex gap-2 pt-2"><Button type="submit" className="flex-1">{editingCategory ? 'ذخیره تغییرات' : 'افزودن'}</Button>{editingCategory && (<Button type="button" variant="outline" onClick={handleCancelEdit}>انصراف</Button>)}</div>
+                </form>
+            </CardContent>
+        </Card>
+    </div>
+    <div className="lg:col-span-2">
+        <Card>
+            <CardHeader><CardTitle>لیست دسته‌بندی‌ها</CardTitle></CardHeader>
+            <CardContent><CategoryTree categories={categories} onEdit={setEditingCategory} onDelete={(cat) => console.log("Delete:", cat)} /></CardContent>
+        </Card>
+    </div>
+</div>
+);
+};
+
+
+// --- کامپوننت اصلی لایه پنل ---
+export default function App() {
+const [activePage, setActivePage] = useState('dashboard');
+const [productView, setProductView] = useState('list'); // 'list' or 'add'
+
+const renderPage = () => {
+switch (activePage) {
+case 'products':
+return productView === 'list'
+? <ProductListPage setView={setProductView} />
+: <AddProductPage setView={setProductView} />;
+case 'categories':
+return <CategoryPage />;
+case 'dashboard':
+default:
+return <div className="text-center p-8 bg-white rounded-xl shadow-sm"><h1 className="text-2xl font-bold">به داشبورد مدیریت خوش آمدید</h1><p className="text-gray-500 mt-2">از منوی کناری برای شروع استفاده کنید.</p></div>;
+}
+};
+
+const NavLink = ({ pageName, icon, children }) => (
+<a href="#"
+   onClick={(e) => {
+e.preventDefault();
+setActivePage(pageName);
+if (pageName === 'products') setProductView('list');
+}}
+className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-gray-900 ${activePage === pageName ? 'bg-gray-200 text-gray-900' : 'text-gray-500'}`}>
+{icon} {children}
+</a>
+);
+
+return (
+<>
+<style>{`
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap');
+body { font-family: 'Vazirmatn', sans-serif; }
+    `}</style>
+<div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]" dir="rtl">
+    <div className="hidden border-l bg-gray-100/40 lg:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+            <div className="flex h-[60px] items-center border-b px-6">
+                <a href="#" className="flex items-center gap-2 font-semibold">
+                    <Package className="h-6 w-6" />
+                    <span>پنل مدیریت</span>
+                </a>
+            </div>
+            <div className="flex-1 overflow-auto py-2">
+                <nav className="grid items-start px-4 text-sm font-medium">
+                    <NavLink pageName="dashboard" icon={<Home className="h-4 w-4" />}>داشبورد</NavLink>
+                    <NavLink pageName="orders" icon={<ShoppingCart className="h-4 w-4" />}>سفارشات</NavLink>
+                    <NavLink pageName="products" icon={<Package className="h-4 w-4" />}>محصولات</NavLink>
+                    <NavLink pageName="categories" icon={<Folder className="h-4 w-4" />}>دسته‌بندی‌ها</NavLink>
+                    <NavLink pageName="users" icon={<Users className="h-4 w-4" />}>کاربران</NavLink>
+                </nav>
+            </div>
+        </div>
+    </div>
+    <div className="flex flex-col">
+        <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-gray-100/40 px-6">
+            <a href="#" className="lg:hidden"><Menu className="h-6 w-6" /></a>
+            <div className="w-full flex-1"></div>
+            <div>
+                <Button variant="ghost" size="icon" className="rounded-full border w-8 h-8">
+                    <img src="https://placehold.co/32x32/E2E8F0/4A5568?text=A" className="rounded-full" alt="Avatar"/>
+                </Button>
+            </div>
+        </header>
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 bg-gray-50">
+            {renderPage()}
+        </main>
+    </div>
+</div>
+</>
+);
+}
+

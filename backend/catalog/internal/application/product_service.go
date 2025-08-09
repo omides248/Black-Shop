@@ -49,7 +49,7 @@ func (s *productService) CreateProduct(ctx context.Context, name string) (*domai
 		Name: name,
 	}
 
-	if err := s.productRepo.Save(ctx, newProduct); err != nil {
+	if err := s.productRepo.Create(ctx, newProduct); err != nil {
 		s.logger.Error("failed to save product via repository", zap.Error(err))
 		return nil, err
 	}

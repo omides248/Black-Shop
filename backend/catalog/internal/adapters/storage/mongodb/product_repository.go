@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.uber.org/zap"
@@ -125,7 +126,7 @@ func (r *productRepo) FindAll(ctx context.Context, filterQuery bson.M, sortOptio
 	return products, total, nil
 }
 
-func (r *productRepo) Save(ctx context.Context, product *domain.Product) error {
+func (r *productRepo) Create(ctx context.Context, product *domain.Product) error {
 	r.logger.Info("creating a new product", zap.String("product_name", product.Name))
 
 	p := model.MongoProduct{

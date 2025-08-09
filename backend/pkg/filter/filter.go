@@ -1,7 +1,6 @@
 package filter
 
 import (
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"strings"
@@ -95,8 +94,6 @@ func (fs *FilterSet) BuildMongoQuery(c echo.Context) QueryBuilderResult {
 			result.FilterQuery["$or"] = searchClauses
 		}
 	}
-
-	fmt.Printf("Query: %+v\n", result)
 
 	return result
 }

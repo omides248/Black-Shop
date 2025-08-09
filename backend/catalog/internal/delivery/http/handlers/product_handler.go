@@ -22,11 +22,6 @@ type ProductResponse struct {
 	Name string `json:"name"`
 }
 
-type ProductHandler struct {
-	service application.ProductService
-	logger  *zap.Logger
-}
-
 type PaginatedResponse struct {
 	Count    int64       `json:"count"`
 	Next     *string     `json:"next"`
@@ -41,6 +36,11 @@ var productFilterSet = &filter.FilterSet{
 	},
 	SearchFields:   []string{"name", "description"},
 	OrderingFields: []string{"price", "created_at"},
+}
+
+type ProductHandler struct {
+	service application.ProductService
+	logger  *zap.Logger
 }
 
 func NewProductHandler(service application.ProductService, logger *zap.Logger) *ProductHandler {

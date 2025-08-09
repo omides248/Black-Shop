@@ -42,7 +42,7 @@ func (s *categoryService) CreateCategory(ctx context.Context, name string, image
 		return nil, err
 	}
 
-	if err := s.categoryRepo.Save(ctx, newCategory); err != nil {
+	if err := s.categoryRepo.Create(ctx, newCategory); err != nil {
 		s.logger.Error("failed to create category via repository", zap.Error(err))
 		return nil, err
 	}
