@@ -9,7 +9,7 @@ import (
 type MongoCategory struct {
 	ID        bson.ObjectID      `bson:"_id,omitempty"`
 	Name      string             `bson:"name"`
-	ImageURL  *string            `bson:"imageUrl,omitempty"`
+	Image     *string            `bson:"image,omitempty"`
 	ParentID  *domain.CategoryID `bson:"parentId,omitempty"`
 	Depth     int                `bson:"depth"`
 	CreatedAt time.Time          `bson:"createdAt"`

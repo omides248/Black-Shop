@@ -1,15 +1,22 @@
 package router
 
 import (
+	"catalog/config"
 	"catalog/internal/application"
 	"catalog/internal/delivery/http/handlers"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+	"pkg/local_storage"
 	"pkg/pagination"
+	"strings"
 )
 
-func Setup(e *echo.Echo, categoryService application.CategoryService, productService application.ProductService, logger *zap.Logger) {
-	categoryHandler := handlers.NewCategoryHandler(categoryService, logger)
+func Setup(e *echo.Echo, categoryService application.CategoryService, productService application.ProductService, localStorageService *local_storage.Service, cfg *config.Config, logger *zap.Logger) {
+
+	e.Static(getStaticFilesPrefix(cfg.LocalStorage.StaticFilesPrefix), cfg.LocalStorage.PublicStoragePath)
+
+	categoryHandler := handlers.NewCategoryHandler(categoryService, localStorageService, cfg, logger)
 	productHandler := handlers.NewProductHandler(productService, logger)
 
 	v1 := e.Group("/v1")
@@ -27,4 +34,13 @@ func Setup(e *echo.Echo, categoryService application.CategoryService, productSer
 		}
 
 	}
+}
+
+func getStaticFilesPrefix(staticFilesPrefix string) string {
+	if !strings.HasPrefix(staticFilesPrefix, "/") {
+		staticFilesPrefix = fmt.Sprintf("/%s", staticFilesPrefix)
+	}
+
+	fmt.Println("staticFilesPrefix", staticFilesPrefix)
+	return staticFilesPrefix
 }

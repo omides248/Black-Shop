@@ -7,6 +7,7 @@ type Config struct {
 	CatalogGRPCPort string `mapstructure:"CATALOG_GRPC_PORT"`
 	CatalogHTTPPort string `mapstructure:"CATALOG_HTTP_PORT"`
 	CatalogGRPCAddr string `mapstructure:"CATALOG_GRPC_ADDR"`
+	CatalogHost     string `mapstructure:"CATALOG_HOST"`
 
 	// Identity Service
 	IdentityGRPCPort string `mapstructure:"IDENTITY_GRPC_PORT"`
@@ -23,6 +24,15 @@ type Config struct {
 	PostgresIdentityURI string `mapstructure:"POSTGRES_IDENTITY_URI"`
 	PostgresOrderURI    string `mapstructure:"POSTGRES_ORDER_URI"`
 	RedisAddr           string `mapstructure:"REDIS_ADDR"`
+
+	// MinIO
+	MinioEndpoint  string `mapstructure:"MINIO_ENDPOINT"`
+	MinioAccessKey string `mapstructure:"MINIO_ACCESS_KEY"`
+	MinioSecretKey string `mapstructure:"MINIO_SECRET_KEY"`
+	MinioPublicURL string `mapstructure:"MINIO_PUBLIC_URL"`
+
+	// Local Storage
+	LocalStoragePath string `mapstructure:"LOCAL_STORAGE_PATH"`
 
 	// General
 	AppEnv string `mapstructure:"APP_ENV"`

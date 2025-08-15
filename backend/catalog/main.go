@@ -1,6 +1,7 @@
 package main
 
 import (
+	"catalog/config"
 	"catalog/internal/adapters/storage/mongodb"
 	"catalog/internal/application"
 	"context"
@@ -11,7 +12,7 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"pkg/config"
+	"pkg/local_storage"
 	"pkg/logger"
 	"pkg/validation"
 	"time"
@@ -33,7 +34,7 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	appLogger := logger.New(cfg.AppEnv)
+	appLogger := logger.New(cfg.General.AppEnv)
 	defer func(appLogger *zap.Logger) {
 		_ = appLogger.Sync()
 	}(appLogger)
@@ -45,7 +46,7 @@ func main() {
 
 func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 	// Setup database
-	db, err := setupDatabase(ctx, cfg.MongoURI, appLogger)
+	db, err := setupDatabase(ctx, cfg.Database.MongoURI, appLogger)
 	if err != nil {
 		appLogger.Error("failed to setup database", zap.Error(err))
 		return err
@@ -65,6 +66,27 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 		return fmt.Errorf("failed to create category repository: %w", err)
 	}
 
+	// --- MinIO Service ---
+	//minioService, err := minio.NewService(
+	//	cfg.MinioEndpoint,
+	//	cfg.MinioAccessKey,
+	//	cfg.MinioSecretKey,
+	//	cfg.MinioPublicURL,
+	//	appLogger,
+	//)
+	//if err != nil {
+	//	return fmt.Errorf("failed to create MinIO service: %w", err)
+	//}
+
+	// --- Local Storage ---
+	localStorageService, err := local_storage.NewService(
+		cfg.LocalStorage.PublicStoragePath,
+		appLogger,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create local storage service: %w", err)
+	}
+
 	// --- Application Services ---
 	productService := application.NewProductService(productRepo, appLogger)
 	categoryService := application.NewCategoryService(categoryRepo, productRepo, appLogger)
@@ -81,12 +103,12 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 	// Setup gRPC
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- runGRPCServer(cfg.CatalogGRPCPort, grpcServerHandler, appLogger)
+		errCh <- runGRPCServer(cfg.General.GRPCPort, grpcServerHandler, appLogger)
 	}()
 
 	// Setup Echo
 	go func() {
-		errCh <- runHTTPServer(cfg.CatalogHTTPPort, categoryService, productService, appLogger)
+		errCh <- runHTTPServer(cfg.General.HTTPPort, categoryService, productService, localStorageService, cfg, appLogger)
 	}()
 
 	select {
@@ -125,7 +147,7 @@ func runGRPCServer(port string, handler pb.CatalogServiceServer, appLogger *zap.
 	return gRPCServer.Serve(lis)
 }
 
-func runHTTPServer(port string, catSvc application.CategoryService, prodSvc application.ProductService, appLogger *zap.Logger) error {
+func runHTTPServer(port string, catSvc application.CategoryService, prodSvc application.ProductService, localStorageService *local_storage.Service, cfg *config.Config, appLogger *zap.Logger) error {
 	appLogger.Info("starting HTTP (Echo) server...", zap.String("port", port))
 	e := echo.New()
 
@@ -134,7 +156,7 @@ func runHTTPServer(port string, catSvc application.CategoryService, prodSvc appl
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	httpserver.Setup(e, catSvc, prodSvc, appLogger)
+	httpserver.Setup(e, catSvc, prodSvc, localStorageService, cfg, appLogger)
 
 	appLogger.Info("HTTP (Echo) Server is running", zap.String("port", port))
 	if err := e.Start(port); err != nil && !errors.Is(err, http.ErrServerClosed) {

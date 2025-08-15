@@ -50,7 +50,7 @@ func (r *categoryRepo) Create(ctx context.Context, category *domain.Category) er
 
 	mc := model.MongoCategory{
 		Name:      category.Name,
-		ImageURL:  category.ImageURL,
+		Image:     category.Image,
 		ParentID:  category.ParentID,
 		Depth:     category.Depth,
 		CreatedAt: time.Now(),
@@ -82,7 +82,7 @@ func (r *categoryRepo) Update(ctx context.Context, category *domain.Category) er
 	mc := model.MongoCategory{
 		ID:        oid,
 		Name:      category.Name,
-		ImageURL:  category.ImageURL,
+		Image:     category.Image,
 		ParentID:  category.ParentID,
 		Depth:     category.Depth,
 		CreatedAt: time.Now(),
@@ -128,7 +128,7 @@ func (r *categoryRepo) FindByID(ctx context.Context, id domain.CategoryID) (*dom
 	return &domain.Category{
 		ID:        domain.CategoryID(mc.ID.Hex()),
 		Name:      mc.Name,
-		ImageURL:  mc.ImageURL,
+		Image:     mc.Image,
 		ParentID:  mc.ParentID,
 		Depth:     mc.Depth,
 		CreatedAt: mc.CreatedAt,
@@ -157,7 +157,7 @@ func (r *categoryRepo) FindAll(ctx context.Context) ([]*domain.Category, error) 
 		categories = append(categories, &domain.Category{
 			ID:        domain.CategoryID(mc.ID.Hex()),
 			Name:      mc.Name,
-			ImageURL:  mc.ImageURL,
+			Image:     mc.Image,
 			ParentID:  mc.ParentID,
 			Depth:     mc.Depth,
 			CreatedAt: mc.CreatedAt,
@@ -195,7 +195,7 @@ func (r *categoryRepo) FindByNameAndParentID(ctx context.Context, name string, p
 	return &domain.Category{
 		ID:        domain.CategoryID(mc.ID.Hex()),
 		Name:      mc.Name,
-		ImageURL:  mc.ImageURL,
+		Image:     mc.Image,
 		ParentID:  mc.ParentID,
 		Depth:     mc.Depth,
 		CreatedAt: mc.CreatedAt,

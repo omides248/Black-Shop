@@ -21,7 +21,7 @@ func NewCategoryService(catRepo domain.CategoryRepository, prodRepo domain.Produ
 	}
 }
 
-func (s *categoryService) CreateCategory(ctx context.Context, name string, imageUrl, parentID *string) (*domain.Category, error) {
+func (s *categoryService) CreateCategory(ctx context.Context, name string, image, parentID *string) (*domain.Category, error) {
 	s.logger.Info("creating a new category", zap.String("name", name))
 
 	// Rule 1: Limit Depth
@@ -36,7 +36,7 @@ func (s *categoryService) CreateCategory(ctx context.Context, name string, image
 		return nil, err
 	}
 
-	newCategory, err := domain.NewCategory(name, imageUrl, parentCategory)
+	newCategory, err := domain.NewCategory(name, image, parentCategory)
 	if err != nil {
 		s.logger.Warn("failed to create new object category from domain factory", zap.String("name", name))
 		return nil, err
@@ -50,6 +50,17 @@ func (s *categoryService) CreateCategory(ctx context.Context, name string, image
 	s.logger.Info("category created successfully", zap.String("category_id", string(newCategory.ID)), zap.String("name", newCategory.Name))
 	return newCategory, nil
 
+}
+
+func (s *categoryService) UpdateCategory(ctx context.Context, category *domain.Category) error {
+	s.logger.Info("updating category", zap.String("category_id", string(category.ID)))
+
+	if err := s.categoryRepo.Update(ctx, category); err != nil {
+		s.logger.Error("failed to update category via repository", zap.Error(err))
+		return err
+	}
+	s.logger.Info("category updated successfully", zap.String("category_id", string(category.ID)))
+	return nil
 }
 
 func (s *categoryService) GetAllCategories(ctx context.Context) ([]*domain.Category, error) {

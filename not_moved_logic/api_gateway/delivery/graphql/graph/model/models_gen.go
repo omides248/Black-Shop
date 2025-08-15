@@ -13,7 +13,7 @@ type Category struct {
 
 type CreateCategoryInput struct {
 	Name     string  `json:"name"`
-	ImageURL *string `json:"image_url,omitempty"`
+	Image    *string `json:"image,omitempty"`
 	ParentID *string `json:"parent_id,omitempty"`
 }
 
