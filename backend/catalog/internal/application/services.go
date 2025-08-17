@@ -4,7 +4,23 @@ import (
 	"catalog/internal/domain"
 	"context"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.uber.org/zap"
 )
+
+type Service struct {
+	ProductService  ProductService
+	CategoryService CategoryService
+}
+
+func NewService(productRepo domain.ProductRepository, categoryRepo domain.CategoryRepository, logger *zap.Logger) *Service {
+	productService := NewProductService(productRepo, logger)
+	categoryService := NewCategoryService(categoryRepo, productRepo, logger)
+
+	return &Service{
+		ProductService:  productService,
+		CategoryService: categoryService,
+	}
+}
 
 type ProductService interface {
 	GetProduct(ctx context.Context, id domain.ProductID) (*domain.Product, error)

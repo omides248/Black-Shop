@@ -2,8 +2,9 @@ package main
 
 import (
 	"catalog/config"
-	"catalog/internal/adapters/storage/mongodb"
+	"catalog/internal/adapters"
 	"catalog/internal/application"
+	"catalog/internal/domain"
 	"context"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"pkg/echo/error_handler"
 	"pkg/local_storage"
 	"pkg/logger"
 	"pkg/validation"
@@ -34,7 +36,12 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	appLogger := logger.New(cfg.General.AppEnv)
+	logger.Init("development")
+	defer func(Logger *zap.Logger) {
+		_ = Logger.Sync()
+	}(logger.Logger)
+
+	appLogger := logger.Logger
 	defer func(appLogger *zap.Logger) {
 		_ = appLogger.Sync()
 	}(appLogger)
@@ -55,15 +62,10 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 		_ = client.Disconnect(ctx)
 	}(db.Client(), ctx)
 
-	// --- Repositories ---
-	productRepo, err := mongodb.NewProductRepository(db, appLogger)
+	// --- Adapters ---
+	adapter, err := adapters.NewAdapter(db, appLogger)
 	if err != nil {
-		return fmt.Errorf("failed to create product repository: %w", err)
-	}
-
-	categoryRepo, err := mongodb.NewCategoryRepository(db, appLogger)
-	if err != nil {
-		return fmt.Errorf("failed to create category repository: %w", err)
+		appLogger.Fatal("failed to create adapters", zap.Error(err))
 	}
 
 	// --- MinIO Service ---
@@ -88,12 +90,11 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 	}
 
 	// --- Application Services ---
-	productService := application.NewProductService(productRepo, appLogger)
-	categoryService := application.NewCategoryService(categoryRepo, productRepo, appLogger)
+	service := application.NewService(adapter.ProductRepo, adapter.CategoryRepo, appLogger)
 
 	grpcServerDeps := grpcserver.ServerDependencies{
-		ProductService:  productService,
-		CategoryService: categoryService,
+		ProductService:  service.ProductService,
+		CategoryService: service.CategoryService,
 		Logger:          appLogger,
 	}
 
@@ -108,7 +109,7 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 
 	// Setup Echo
 	go func() {
-		errCh <- runHTTPServer(cfg.General.HTTPPort, categoryService, productService, localStorageService, cfg, appLogger)
+		errCh <- runHTTPServer(cfg.General.HTTPPort, service.CategoryService, service.ProductService, localStorageService, cfg, appLogger)
 	}()
 
 	select {
@@ -155,6 +156,17 @@ func runHTTPServer(port string, catSvc application.CategoryService, prodSvc appl
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.RequestID())
+
+	domainErrorMappings := map[error]error_handler.DomainErrorMapping{
+		domain.ErrProductNotFound:            {StatusCode: http.StatusNotFound, Message: domain.ErrProductNotFound.Error()},
+		domain.ErrCategoryNotFound:           {StatusCode: http.StatusNotFound, Message: domain.ErrCategoryNotFound.Error()},
+		domain.ErrCategoryAlreadyExists:      {StatusCode: http.StatusConflict, Message: domain.ErrCategoryAlreadyExists.Error()},
+		domain.ErrCategoryDepthLimitExceeded: {StatusCode: http.StatusBadRequest, Message: domain.ErrCategoryDepthLimitExceeded.Error()},
+		domain.ErrCategoryHasProducts:        {StatusCode: http.StatusBadRequest, Message: domain.ErrCategoryHasProducts.Error()},
+	}
+
+	e.HTTPErrorHandler = error_handler.NewHTTPErrorHandler(domainErrorMappings, appLogger)
 
 	httpserver.Setup(e, catSvc, prodSvc, localStorageService, cfg, appLogger)
 

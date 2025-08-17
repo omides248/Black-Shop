@@ -6,11 +6,13 @@ import (
 	"catalog/internal/domain"
 	"errors"
 	"fmt"
+	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"mime/multipart"
 	"net/http"
 	"pkg/local_storage"
+	"pkg/validation"
 	"time"
 )
 
@@ -21,10 +23,11 @@ type CategoryHandler struct {
 	logger              *zap.Logger
 }
 
-//type CreateCategoryRequest struct {
-//	Name     string  `json:"name"`
-//	ParentID *string `json:"parent_id,omitempty"`
-//}
+type CreateCategoryRequest struct {
+	Name     string                `form:"name"`
+	ParentID *string               `form:"parent_id,omitempty"`
+	Image    *multipart.FileHeader `form:"image,omitempty"`
+}
 
 type CategoryResponse struct {
 	ID            string              `json:"id"`
@@ -45,57 +48,51 @@ func NewCategoryHandler(service application.CategoryService, localStorageService
 	}
 }
 
-//func (h *CategoryHandler) CreateCategory(c echo.Context) error {
-//	var req CreateCategoryRequest
-//	if err := c.Bind(&req); err != nil {
-//		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
-//	}
-//
-//	domainCategory, err := h.service.CreateCategory(c.Request().Context(), req.Name, req.ParentID)
-//	if err != nil {
-//		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
-//	}
-//
-//	return c.JSON(http.StatusOK, echo.Map{"category": toCategoryResponse(domainCategory)})
-//}
-
 func (h *CategoryHandler) CreateCategory(c echo.Context) error {
-	name := c.FormValue("name")
-	parentIDStr := c.FormValue("parent_id")
+	var req CreateCategoryRequest
 
-	var parentID *string
-	if parentIDStr != "" {
-		parentID = &parentIDStr
+	req.Name = c.FormValue("name")
+
+	parentID := c.FormValue("parent_id")
+	if parentID != "" {
+		req.ParentID = &parentID
 	}
 
-	domainCategory, err := h.service.CreateCategory(c.Request().Context(), name, nil, parentID)
+	if file, err := c.FormFile("image"); err == nil {
+		req.Image = file
+	}
+
+	if err := req.Validate(); err != nil {
+		return err
+	}
+
+	domainCategory, err := h.service.CreateCategory(c.Request().Context(), req.Name, nil, req.ParentID)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+		return err
 	}
 
-	file, err := c.FormFile("image")
-	if err == nil {
-		src, err := file.Open()
+	if req.Image != nil {
+		src, err := req.Image.Open()
 		if err != nil {
 			h.logger.Error("failed to open uploaded file", zap.Error(err))
-			return c.JSON(http.StatusBadRequest, echo.Map{"error": "Failed to open uploaded file"})
+			return err
 		}
 		defer func(src multipart.File) {
 			_ = src.Close()
 		}(src)
 
 		subDirectory := "categories"
-		relativePath, err := h.localStorageService.UploadFile(subDirectory, file.Filename, src)
+		relativePath, err := h.localStorageService.UploadFile(subDirectory, req.Image.Filename, src)
 		if err != nil {
 			h.logger.Error("failed to upload file to MinIO", zap.Error(err))
-			return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to upload file"})
+			return err
 		}
 
 		domainCategory.Image = &relativePath
 		err = h.service.UpdateCategory(c.Request().Context(), domainCategory)
 		if err != nil {
 			h.logger.Error("failed to update category with image URL", zap.Error(err))
-			return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to update category with image URL"})
+			return err
 		}
 	} else if !errors.Is(err, http.ErrMissingBoundary) && !errors.Is(err, http.ErrNotMultipart) {
 		h.logger.Warn("image file not provided", zap.Error(err))
@@ -107,6 +104,7 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 
 func (h *CategoryHandler) ListCategories(c echo.Context) error {
 	domainCategories, err := h.service.GetAllCategories(c.Request().Context())
+
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
@@ -180,4 +178,19 @@ func (h *CategoryHandler) toCategoryResponse(c echo.Context, cat *domain.Categor
 		Depth:     cat.Depth,
 		CreatedAt: cat.CreatedAt,
 	}
+}
+
+func (r *CreateCategoryRequest) Validate() error {
+	return ozzo.ValidateStruct(r,
+		ozzo.Field(&r.Name, ozzo.Required, ozzo.Length(3, 100)),
+		ozzo.Field(&r.ParentID, ozzo.NilOrNotEmpty),
+		ozzo.Field(&r.Image,
+			ozzo.When(r.Image != nil,
+				ozzo.By(validation.ImageRule(
+					5*1024*1024, // 5 MB
+					[]string{".jpg", ".jpeg", ".png"},
+				)),
+			),
+		),
+	)
 }

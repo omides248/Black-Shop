@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+	"pkg/echo/pagination"
 	"pkg/local_storage"
-	"pkg/pagination"
 	"strings"
 )
 
@@ -41,6 +41,5 @@ func getStaticFilesPrefix(staticFilesPrefix string) string {
 		staticFilesPrefix = fmt.Sprintf("/%s", staticFilesPrefix)
 	}
 
-	fmt.Println("staticFilesPrefix", staticFilesPrefix)
 	return staticFilesPrefix
 }

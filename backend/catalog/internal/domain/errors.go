@@ -2,7 +2,6 @@ package domain
 
 import "errors"
 
-// TODO move to errors pkg
 var (
 	ErrProductNotFound            = errors.New("product not found")
 	ErrCategoryNotFound           = errors.New("category not found")

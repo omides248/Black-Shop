@@ -7,9 +7,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
-	"pkg/filter"
-	"pkg/http_errors"
-	"pkg/pagination"
+	"pkg/echo/filter"
+	"pkg/echo/pagination"
 )
 
 type CreateProductRequest struct {
@@ -57,7 +56,7 @@ func (h *ProductHandler) CreateProduct(c echo.Context) error {
 	}
 
 	if err := c.Validate(req); err != nil {
-		return http_errors.HandleValidationError(c, err)
+		return err
 	}
 
 	productDomain, err := h.service.CreateProduct(c.Request().Context(), req.Name)
