@@ -8,8 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"log"
 	"net"
 	"net/http"
@@ -19,8 +17,16 @@ import (
 	"pkg/validation"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -61,6 +67,21 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 	defer func(client *mongo.Client, ctx context.Context) {
 		_ = client.Disconnect(ctx)
 	}(db.Client(), ctx)
+
+	// Setup OpenTelemetry MeterProvider
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	mp, err := newMeterProvider(ctx, appLogger)
+	if err != nil {
+		appLogger.Fatal("failed to create meter provider", zap.Error(err))
+	}
+	defer func() {
+		if err := mp.Shutdown(ctx); err != nil {
+			appLogger.Fatal("failed to shutdown meter provider", zap.Error(err))
+		}
+	}()
+	appLogger.Info("OpenTelemetry MeterProvider initialized")
 
 	// --- Adapters ---
 	adapter, err := adapters.NewAdapter(db, appLogger)
@@ -175,4 +196,32 @@ func runHTTPServer(port string, catSvc application.CategoryService, prodSvc appl
 		return fmt.Errorf("echo server failed: %w", err)
 	}
 	return nil
+}
+
+func newMeterProvider(ctx context.Context, appLogger *zap.Logger) (*metric.MeterProvider, error) {
+	// 1. Create a gRPC exporter
+	exp, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithInsecure(), otlpmetricgrpc.WithEndpoint("otel-collector:4317"))
+	if err != nil {
+		appLogger.Error("failed to create otlpmetricgrpc exporter", zap.Error(err))
+		return nil, err
+	}
+
+	// 2. Create a resource with service name
+	res, err := resource.New(ctx, resource.WithAttributes(
+		semconv.ServiceName("catalog-service"),
+	))
+	if err != nil {
+		appLogger.Error("failed to create resource", zap.Error(err))
+		return nil, err
+	}
+
+	// 3. Create a meter provider
+	mp := metric.NewMeterProvider(
+		metric.WithResource(res),
+		metric.WithReader(metric.NewPeriodicReader(exp, metric.WithInterval(5*time.Second))), // Push every 5 seconds
+	)
+
+	// 4. Set the global meter provider
+	otel.SetMeterProvider(mp)
+	return mp, nil
 }

@@ -1,8 +1,28 @@
-# docker run --name black-shop-mongo -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=omides248 -e MONGO_INITDB_ROOT_PASSWORD=123123 -d mongo
-# docker run --name black-shop-postgres -p 5432:5432 -e POSTGRES_USER=omides248 -e POSTGRES_PASSWORD=123123 -e POSTGRES_DB=identity_db -d postgres
-# docker run --name black-shop-redis -p 6379:6379 -d redis
-
 services:
+
+  catalog-service:
+    image: golang:1.24.5-alpine
+    container_name: catalog-service
+    volumes:
+      - ../catalog:/go/src/catalog
+      - ../pkg:/go/src/pkg
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    working_dir: /go/src/catalog
+    stdin_open: true # Keep stdin open to allow manual input
+    tty: true        # Allocate a pseudo-TTY
+    user: "root"
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    depends_on:
+      - otel-collector
+      - mongo
+      - postgres
+      - redis
+    networks:
+      - otel-network
+
   mongo:
     image: mongo
     container_name: black-shop-mongo
@@ -18,6 +38,8 @@ services:
         limits:
           memory: 768M
           cpus: "0.75"
+    networks:
+      - otel-network
 
   postgres:
     image: postgres
@@ -35,6 +57,8 @@ services:
         limits:
           memory: 1G
           cpus: "1.0"
+    networks:
+      - otel-network
 
   redis:
     image: redis
@@ -48,71 +72,58 @@ services:
         limits:
           memory: 256M
           cpus: "0.25"
+    networks:
+      - otel-network
 
-#  minio:
-#    image: minio/minio
-#    container_name: black-shop-minio
-#    command: server /data --console-address ":9001"
+  # Observability Services
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.132.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC receiver
+      - "8889:8889" # Prometheus exporter
+    networks:
+      - otel-network
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus.yaml
+      - --storage.tsdb.path=/prometheus
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus.yaml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - otel-network
+
+  grafana:
+    image: grafana/grafana:11.5.8
+    container_name: grafana
+    ports:
+      - "3000:3000"
 #    environment:
-#      - MINIO_ROOT_USER=minioadmin
-#      - MINIO_ROOT_PASSWORD=minioadmin
-#    ports:
-#      - "9000:9000"
-#      - "9001:9001"
-#    volumes:
-#      - minio-data:/data
-#    deploy:
-#      resources:
-#        limits:
-#          memory: 512M
-#          cpus: "0.5"
-
+#      - GF_SERVER_HTTP_ADDR=0.0.0.0
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - otel-network
 
 volumes:
   mongo-data:
   postgres-data:
   redis-data:
   minio-data:
+  grafana-data:
+  prometheus-data:
+  go-mod-cache:
+  go-build-cache:
 
-
-
-
-#services:
-#  mongo:
-#    image: mongo
-#    container_name: black-shop-mongo
-#    environment:
-#      - MONGO_INITDB_ROOT_USERNAME=omides248
-#      - MONGO_INITDB_ROOT_PASSWORD=123123
-#    ports:
-#      - "27017:27017"
-#    command: ["--replSet", "rs0", "--auth", "--keyFile", "/etc/mongo-keyfile"]
-#    volumes:
-#      - mongo-data:/data/db
-#      - ./mongo-keyfile:/etc/mongo-keyfile:ro
-#
-#  postgres:
-#    image: postgres
-#    container_name: black-shop-postgres
-#    environment:
-#      - POSTGRES_USER=omides248
-#      - POSTGRES_PASSWORD=123123
-#      - POSTGRES_DB=identity_db
-#    ports:
-#      - "5432:5432"
-#    volumes:
-#      - postgres-data:/var/lib/postgresql/data
-#      - ./init-postgresql.sh:/docker-entrypoint-initdb.d/init-db.sh
-#
-#  redis:
-#    image: redis
-#    container_name: black-shop-redis
-#    ports:
-#      - "6379:6379"
-#    volumes:
-#      - redis-data:/data
-#
-#volumes:
-#  mongo-data:
-#  postgres-data:
-#  redis-data:
+networks:
+  otel-network:
+    driver: bridge

@@ -4,6 +4,7 @@ import (
 	"catalog/config"
 	"catalog/internal/application"
 	"catalog/internal/delivery/http/handlers"
+	"catalog/internal/delivery/http/middleware"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -21,6 +22,8 @@ func Setup(e *echo.Echo, categoryService application.CategoryService, productSer
 
 	v1 := e.Group("/v1")
 	{
+		v1.Use(middleware.MetricsMiddleware())
+
 		categories := v1.Group("/categories")
 		{
 			categories.POST("", categoryHandler.CreateCategory)
