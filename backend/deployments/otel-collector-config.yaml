@@ -1,17 +1,32 @@
 receivers:
+  # OTLP receiver to accept metrics and traces from your application via gRPC
   otlp:
     protocols:
       grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
+        endpoint: "0.0.0.0:4317"
 
 exporters:
+  # Prometheus exporter to expose metrics for Prometheus to scrape
   prometheus:
     endpoint: "0.0.0.0:8889"
 
+  # A simple debugging exporter to see traces in the collector's logs
+  logging:
+    loglevel: debug
+
+processors:
+  batch:
+
 service:
   pipelines:
+    # This is your existing metrics pipeline
     metrics:
       receivers: [otlp]
+      processors: [batch]
       exporters: [prometheus]
+
+    # Add a new pipeline for traces
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging] # Use the logging exporter for a quick check

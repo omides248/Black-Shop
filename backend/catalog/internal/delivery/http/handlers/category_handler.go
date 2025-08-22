@@ -3,17 +3,16 @@ package handlers
 import (
 	"catalog/config"
 	"catalog/internal/application"
+	"catalog/internal/delivery/http/dto"
 	"catalog/internal/domain"
 	"errors"
 	"fmt"
-	ozzo "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 	"mime/multipart"
 	"net/http"
 	"pkg/local_storage"
-	"pkg/validation"
-	"time"
+
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 type CategoryHandler struct {
@@ -21,22 +20,6 @@ type CategoryHandler struct {
 	localStorageService *local_storage.Service
 	config              *config.Config
 	logger              *zap.Logger
-}
-
-type CreateCategoryRequest struct {
-	Name     string                `form:"name"`
-	ParentID *string               `form:"parent_id,omitempty"`
-	Image    *multipart.FileHeader `form:"image,omitempty"`
-}
-
-type CategoryResponse struct {
-	ID            string              `json:"id"`
-	Name          string              `json:"name"`
-	Image         *string             `json:"image,omitempty"`
-	ParentID      *string             `json:"parentId,omitempty"`
-	Depth         int                 `json:"depth"`
-	Subcategories []*CategoryResponse `json:"subcategory,omitempty"`
-	CreatedAt     time.Time           `json:"createdAt"`
 }
 
 func NewCategoryHandler(service application.CategoryService, localStorageService *local_storage.Service, cfg *config.Config, logger *zap.Logger) *CategoryHandler {
@@ -49,11 +32,11 @@ func NewCategoryHandler(service application.CategoryService, localStorageService
 }
 
 func (h *CategoryHandler) CreateCategory(c echo.Context) error {
-	var req CreateCategoryRequest
+	var req dto.CreateCategoryRequest
 
 	req.Name = c.FormValue("name")
 
-	parentID := c.FormValue("parent_id")
+	parentID := c.FormValue("parentId")
 	if parentID != "" {
 		req.ParentID = &parentID
 	}
@@ -102,6 +85,87 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"category": response})
 }
 
+func (h *CategoryHandler) UpdateCategory(c echo.Context) error {
+	categoryID := c.Param("id")
+
+	var req dto.UpdateCategoryRequest
+
+	name := c.FormValue("name")
+	if name != "" {
+		req.Name = &name
+	}
+
+	parentID := c.FormValue("parentId")
+	if parentID != "" {
+		req.ParentID = &parentID
+	}
+
+	if file, err := c.FormFile("image"); err == nil {
+		req.Image = file
+	}
+
+	if err := req.Validate(); err != nil {
+		return err
+	}
+
+	category, err := h.service.FindByID(c.Request().Context(), domain.CategoryID(categoryID))
+	if err != nil {
+		return err
+	}
+	oldImage := category.Image // Store old image path
+
+	if req.Name != nil {
+		category.Name = *req.Name
+	}
+
+	if req.ParentID != nil {
+		parentCatID := domain.CategoryID(*req.ParentID)
+		category.ParentID = &parentCatID
+	}
+
+	if req.Image != nil {
+		src, err := req.Image.Open()
+		if err != nil {
+			h.logger.Error("failed to open uploaded file", zap.Error(err))
+			return err
+		}
+		defer func(src multipart.File) {
+			err := src.Close()
+			if err != nil {
+				h.logger.Error("failed to close uploaded file", zap.Error(err))
+			}
+		}(src)
+
+		subDirectory := "categories"
+		relativePath, err := h.localStorageService.UploadFile(subDirectory, req.Image.Filename, src)
+		if err != nil {
+			h.logger.Error("failed to upload new image file", zap.Error(err))
+			return err
+		}
+		category.Image = &relativePath
+	}
+
+	fmt.Printf("category %+v\n", category)
+	fmt.Printf("category %+v\n", category)
+	fmt.Printf("category %+v\n", category)
+	fmt.Printf("category %+v\n", category)
+
+	if err := h.service.UpdateCategory(c.Request().Context(), category); err != nil {
+		return err
+	}
+
+	if req.Image != nil && oldImage != nil {
+		err := h.localStorageService.DeleteFile(*oldImage)
+		if err != nil {
+			h.logger.Error("failed to delete old image file", zap.Error(err))
+		}
+	}
+
+	response := h.toCategoryResponse(c, category)
+	return c.JSON(http.StatusOK, echo.Map{"category": response})
+
+}
+
 func (h *CategoryHandler) ListCategories(c echo.Context) error {
 	domainCategories, err := h.service.GetAllCategories(c.Request().Context())
 
@@ -114,24 +178,25 @@ func (h *CategoryHandler) ListCategories(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"categories": treeCategories})
 }
 
-func (h *CategoryHandler) buildCategoryTree(c echo.Context, categories []*domain.Category) []*CategoryResponse {
+func (h *CategoryHandler) buildCategoryTree(c echo.Context, categories []*domain.Category) []*dto.CategoryResponse {
 	if len(categories) == 0 {
-		return []*CategoryResponse{}
+		return []*dto.CategoryResponse{}
 	}
 
 	// Create Map
-	categoryMap := make(map[domain.CategoryID]*CategoryResponse)
+	categoryMap := make(map[domain.CategoryID]*dto.CategoryResponse)
 	for _, cat := range categories {
-		dto := h.toCategoryResponse(c, cat)
+		categoryDto := h.toCategoryResponse(c, cat)
 
 		if cat.ParentID != nil {
 			pID := string(*cat.ParentID)
-			dto.ParentID = &pID
+			categoryDto.ParentID = &pID
 		}
-		categoryMap[cat.ID] = &dto
+
+		categoryMap[cat.ID] = &categoryDto
 	}
 
-	var rootCategories []*CategoryResponse
+	var rootCategories []*dto.CategoryResponse
 	for _, cat := range categories {
 		node := categoryMap[cat.ID]
 
@@ -151,7 +216,7 @@ func (h *CategoryHandler) buildCategoryTree(c echo.Context, categories []*domain
 	return rootCategories
 }
 
-func (h *CategoryHandler) toCategoryResponse(c echo.Context, cat *domain.Category) CategoryResponse {
+func (h *CategoryHandler) toCategoryResponse(c echo.Context, cat *domain.Category) dto.CategoryResponse {
 	var parentID *string
 	if cat.ParentID != nil {
 		pID := string(*cat.ParentID)
@@ -170,7 +235,7 @@ func (h *CategoryHandler) toCategoryResponse(c echo.Context, cat *domain.Categor
 		image = &fullURL
 	}
 
-	return CategoryResponse{
+	return dto.CategoryResponse{
 		ID:        string(cat.ID),
 		Name:      cat.Name,
 		Image:     image,
@@ -178,19 +243,4 @@ func (h *CategoryHandler) toCategoryResponse(c echo.Context, cat *domain.Categor
 		Depth:     cat.Depth,
 		CreatedAt: cat.CreatedAt,
 	}
-}
-
-func (r *CreateCategoryRequest) Validate() error {
-	return ozzo.ValidateStruct(r,
-		ozzo.Field(&r.Name, ozzo.Required, ozzo.Length(3, 100)),
-		ozzo.Field(&r.ParentID, ozzo.NilOrNotEmpty),
-		ozzo.Field(&r.Image,
-			ozzo.When(r.Image != nil,
-				ozzo.By(validation.ImageRule(
-					5*1024*1024, // 5 MB
-					[]string{".jpg", ".jpeg", ".png"},
-				)),
-			),
-		),
-	)
 }

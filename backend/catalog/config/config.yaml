@@ -6,7 +6,7 @@ general:
   host: "192.168.8.140:8080"
 
 database:
-  mongo_uri: "mongodb://omides248:123123@mongo:27017/?authSource=admin"
+  mongo_uri: "mongodb://omides248:123123@192.168.8.140:27017/?authSource=admin"
 
 minio:
   endpoint: "localhost:9000"

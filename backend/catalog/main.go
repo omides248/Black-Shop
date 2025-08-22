@@ -4,7 +4,7 @@ import (
 	"catalog/config"
 	"catalog/internal/adapters"
 	"catalog/internal/application"
-	"catalog/internal/domain"
+	"catalog/internal/delivery/http/error_mapping"
 	"context"
 	"errors"
 	"fmt"
@@ -19,13 +19,14 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -68,20 +69,23 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 		_ = client.Disconnect(ctx)
 	}(db.Client(), ctx)
 
-	// Setup OpenTelemetry MeterProvider
-	ctx, cancel := context.WithCancel(context.Background())
+	// Setup OpenTelemetry Providers (Tracer and Meter)
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	mp, err := newMeterProvider(ctx, appLogger)
-	if err != nil {
-		appLogger.Fatal("failed to create meter provider", zap.Error(err))
-	}
-	defer func() {
-		if err := mp.Shutdown(ctx); err != nil {
-			appLogger.Fatal("failed to shutdown meter provider", zap.Error(err))
-		}
-	}()
-	appLogger.Info("OpenTelemetry MeterProvider initialized")
+	//tp, mp, err := newOtelProviders(ctx, appLogger)
+	//if err != nil {
+	//	appLogger.Fatal("failed to create otel providers", zap.Error(err))
+	//}
+	//defer func() {
+	//	if err := tp.Shutdown(ctx); err != nil {
+	//		appLogger.Fatal("failed to shutdown TracerProvider", zap.Error(err))
+	//	}
+	//	if err := mp.Shutdown(ctx); err != nil {
+	//		appLogger.Fatal("failed to shutdown MeterProvider", zap.Error(err))
+	//	}
+	//}()
+	appLogger.Info("OpenTelemetry providers initialized")
 
 	// --- Adapters ---
 	adapter, err := adapters.NewAdapter(db, appLogger)
@@ -175,17 +179,14 @@ func runHTTPServer(port string, catSvc application.CategoryService, prodSvc appl
 
 	e.Validator = validation.New()
 
+	//e.Use(otelecho.Middleware("catalog-service"))
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.Use(middleware.RequestID())
+	//e.Use(middleware.RequestID())
 
-	domainErrorMappings := map[error]error_handler.DomainErrorMapping{
-		domain.ErrProductNotFound:            {StatusCode: http.StatusNotFound, Message: domain.ErrProductNotFound.Error()},
-		domain.ErrCategoryNotFound:           {StatusCode: http.StatusNotFound, Message: domain.ErrCategoryNotFound.Error()},
-		domain.ErrCategoryAlreadyExists:      {StatusCode: http.StatusConflict, Message: domain.ErrCategoryAlreadyExists.Error()},
-		domain.ErrCategoryDepthLimitExceeded: {StatusCode: http.StatusBadRequest, Message: domain.ErrCategoryDepthLimitExceeded.Error()},
-		domain.ErrCategoryHasProducts:        {StatusCode: http.StatusBadRequest, Message: domain.ErrCategoryHasProducts.Error()},
-	}
+	//e.Use(middleware.MetricsMiddleware())
+
+	domainErrorMappings := error_mapping.GetDomainErrorMappings()
 
 	e.HTTPErrorHandler = error_handler.NewHTTPErrorHandler(domainErrorMappings, appLogger)
 
@@ -196,6 +197,49 @@ func runHTTPServer(port string, catSvc application.CategoryService, prodSvc appl
 		return fmt.Errorf("echo server failed: %w", err)
 	}
 	return nil
+}
+
+func newOtelProviders(ctx context.Context, appLogger *zap.Logger) (*sdktrace.TracerProvider, *metric.MeterProvider, error) {
+	// 1. Create a gRPC trace exporter
+	traceExp, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure(), otlptracegrpc.WithEndpoint("otel-collector:4317"))
+	if err != nil {
+		appLogger.Error("failed to create otlptracegrpc exporter", zap.Error(err))
+		return nil, nil, err
+	}
+
+	// 2. Create a gRPC metric exporter
+	metricExp, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithInsecure(), otlpmetricgrpc.WithEndpoint("otel-collector:4317"))
+	if err != nil {
+		appLogger.Error("failed to create otlpmetricgrpc exporter", zap.Error(err))
+		return nil, nil, err
+	}
+
+	// 3. Create a resource with service name
+	res, err := resource.New(ctx, resource.WithAttributes(
+		semconv.ServiceName("catalog-service"),
+	))
+	if err != nil {
+		appLogger.Error("failed to create resource", zap.Error(err))
+		return nil, nil, err
+	}
+
+	// 4. Create a tracer provider
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(traceExp),
+		sdktrace.WithResource(res),
+	)
+
+	// 5. Create a meter provider
+	mp := metric.NewMeterProvider(
+		metric.WithResource(res),
+		metric.WithReader(metric.NewPeriodicReader(metricExp, metric.WithInterval(5*time.Second))), // Push every 5 seconds
+	)
+
+	// 6. Set the global providers
+	otel.SetTracerProvider(tp)
+	otel.SetMeterProvider(mp)
+
+	return tp, mp, nil
 }
 
 func newMeterProvider(ctx context.Context, appLogger *zap.Logger) (*metric.MeterProvider, error) {

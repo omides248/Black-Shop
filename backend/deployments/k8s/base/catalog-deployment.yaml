@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-deployment
+  labels:
+    app: catalog-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog-deployment
+  template:
+    metadata:
+      name: catalog-deployment
+      labels:
+        app: catalog-deployment
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: catalog-deployment
+          image: golang:1.24.5-alpine
+          workingDir: /go/src/catalog
+#          command: [ "sh", "-c", "go run main.go" ]
+          tty: true
+          stdin: true
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - name: catalog-code
+              mountPath: /go/src/catalog
+            - name: pkg-code
+              mountPath: /go/src/pkg
+            - name: go-mod-cache
+              mountPath: /go/pkg/mod
+            - name: go-build-cache
+              mountPath: /root/.cache/go-build
+      volumes:
+        - name: catalog-code
+          hostPath:
+            path: /home/omides248/black-shop/backend/catalog
+            type: Directory
+        - name: pkg-code
+          hostPath:
+            path: /home/omides248/black-shop/backend/pkg
+            type: Directory
+        - name: go-mod-cache
+          hostPath:
+            path: /var/lib/blackshop/cache/go-mod
+            type: DirectoryOrCreate
+        - name: go-build-cache
+          hostPath:
+            path: /var/lib/blackshop/cache/go-build
+            type: DirectoryOrCreate

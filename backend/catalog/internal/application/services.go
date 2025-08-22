@@ -3,6 +3,7 @@ package application
 import (
 	"catalog/internal/domain"
 	"context"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.uber.org/zap"
 )
@@ -13,12 +14,12 @@ type Service struct {
 }
 
 func NewService(productRepo domain.ProductRepository, categoryRepo domain.CategoryRepository, logger *zap.Logger) *Service {
-	productService := NewProductService(productRepo, logger)
-	categoryService := NewCategoryService(categoryRepo, productRepo, logger)
+	productSvc := NewProductService(productRepo, logger)
+	categorySvc := NewCategoryService(categoryRepo, productRepo, logger)
 
 	return &Service{
-		ProductService:  productService,
-		CategoryService: categoryService,
+		ProductService:  productSvc,
+		CategoryService: categorySvc,
 	}
 }
 
@@ -32,4 +33,5 @@ type CategoryService interface {
 	CreateCategory(ctx context.Context, name string, image, parentID *string) (*domain.Category, error)
 	UpdateCategory(ctx context.Context, category *domain.Category) error
 	GetAllCategories(ctx context.Context) ([]*domain.Category, error)
+	FindByID(ctx context.Context, id domain.CategoryID) (*domain.Category, error)
 }

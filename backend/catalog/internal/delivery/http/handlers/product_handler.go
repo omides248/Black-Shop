@@ -2,24 +2,15 @@ package handlers
 
 import (
 	"catalog/internal/application"
+	"catalog/internal/delivery/http/dto"
 	"catalog/internal/domain"
-	ozzo "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 	"net/http"
 	"pkg/echo/filter"
 	"pkg/echo/pagination"
+
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
-
-type CreateProductRequest struct {
-	Name  string `json:"name"`
-	Price string `json:"price"`
-}
-
-type ProductResponse struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
 
 type PaginatedResponse struct {
 	Count    int64       `json:"count"`
@@ -50,7 +41,7 @@ func NewProductHandler(service application.ProductService, logger *zap.Logger) *
 }
 
 func (h *ProductHandler) CreateProduct(c echo.Context) error {
-	var req CreateProductRequest
+	var req dto.CreateProductRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
@@ -82,7 +73,7 @@ func (h *ProductHandler) ListProducts(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "failed to retrieve products"})
 	}
 
-	results := make([]ProductResponse, len(products))
+	results := make([]dto.ProductResponse, len(products))
 	for i, p := range products {
 		results[i] = toProductResponse(p)
 	}
@@ -92,16 +83,9 @@ func (h *ProductHandler) ListProducts(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-func toProductResponse(product *domain.Product) ProductResponse {
-	return ProductResponse{
+func toProductResponse(product *domain.Product) dto.ProductResponse {
+	return dto.ProductResponse{
 		ID:   string(product.ID),
 		Name: product.Name,
 	}
-}
-
-func (r CreateProductRequest) Validate() error {
-	return ozzo.ValidateStruct(&r,
-		ozzo.Field(&r.Name, ozzo.Required, ozzo.Length(3, 100)),
-		ozzo.Field(&r.Price, ozzo.Required),
-	)
 }

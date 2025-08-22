@@ -1,0 +1,4 @@
+resources:
+  - catalog-deployment.yaml
+  - catalog-service.yaml
+  - catalog-ingress.yaml

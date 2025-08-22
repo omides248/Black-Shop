@@ -12,7 +12,7 @@ var (
 	DefaultMinIOSecretKey = "minioadmin"
 	DefaultMinIOPublicURL = "http://localhost:9000"
 
-	DefaultMongoURI = "mongodb://omides248:123123@127.0.0.1:27017/?authSource=admin"
+	DefaultMongoURI = "mongodb://omides248:123123@192.168.8.140:27017/?authSource=admin"
 
 	DefaultPublicStoragePath  = "/var/lib/blackshop/storage/public"
 	DefaultPrivateStoragePath = "/var/lib/blackshop/storage/private"

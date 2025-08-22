@@ -2,13 +2,14 @@ package local_storage
 
 import (
 	"fmt"
-	"github.com/google/uuid"
-	"go.uber.org/zap"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type Service struct {
@@ -73,4 +74,18 @@ func (s *Service) UploadFile(subDirectory string, filename string, file io.Reade
 	s.logger.Info("File uploaded successfully", zap.String("path", relativePath))
 
 	return relativePath, nil
+}
+
+func (s *Service) DeleteFile(relativePath string) error {
+	filePath := filepath.Join(s.BasePath, relativePath)
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		s.logger.Warn("file not found, skipping deletion", zap.String("path", filePath))
+		return nil // File doesn't exist, so no need to return an error
+	}
+	if err := os.Remove(filePath); err != nil {
+		s.logger.Error("failed to delete file", zap.String("path", filePath), zap.Error(err))
+		return fmt.Errorf("failed to delete file: %w", err)
+	}
+	s.logger.Info("successfully deleted file", zap.String("path", filePath))
+	return nil
 }

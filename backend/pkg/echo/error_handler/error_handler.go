@@ -2,12 +2,13 @@ package error_handler
 
 import (
 	"errors"
-	ozzo "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 	"net/http"
 	"strings"
 	"unicode"
+
+	ozzo "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 type ErrorResponse struct {

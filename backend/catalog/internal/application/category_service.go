@@ -4,6 +4,7 @@ import (
 	"catalog/internal/domain"
 	"context"
 	"errors"
+
 	"go.uber.org/zap"
 )
 
@@ -66,6 +67,17 @@ func (s *categoryService) UpdateCategory(ctx context.Context, category *domain.C
 func (s *categoryService) GetAllCategories(ctx context.Context) ([]*domain.Category, error) {
 	s.logger.Info("getting all categories")
 	return s.categoryRepo.FindAll(ctx)
+}
+
+func (s *categoryService) FindByID(ctx context.Context, id domain.CategoryID) (*domain.Category, error) {
+	s.logger.Info("getting category", zap.String("id", string(id)))
+	category, err := s.categoryRepo.FindByID(ctx, id)
+	if err != nil {
+		s.logger.Warn("failed to find category", zap.String("id", string(id)))
+		return nil, err
+	}
+	s.logger.Info("category found successfully", zap.String("category_id", string(category.ID)))
+	return category, nil
 }
 
 func (s *categoryService) validateParentCategory(ctx context.Context, parentID *string) (*domain.Category, error) {

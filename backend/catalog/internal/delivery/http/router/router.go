@@ -4,13 +4,13 @@ import (
 	"catalog/config"
 	"catalog/internal/application"
 	"catalog/internal/delivery/http/handlers"
-	"catalog/internal/delivery/http/middleware"
 	"fmt"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 	"pkg/echo/pagination"
 	"pkg/local_storage"
 	"strings"
+
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 func Setup(e *echo.Echo, categoryService application.CategoryService, productService application.ProductService, localStorageService *local_storage.Service, cfg *config.Config, logger *zap.Logger) {
@@ -22,11 +22,10 @@ func Setup(e *echo.Echo, categoryService application.CategoryService, productSer
 
 	v1 := e.Group("/v1")
 	{
-		v1.Use(middleware.MetricsMiddleware())
-
 		categories := v1.Group("/categories")
 		{
 			categories.POST("", categoryHandler.CreateCategory)
+			categories.PATCH("/:id", categoryHandler.UpdateCategory)
 			categories.GET("", categoryHandler.ListCategories)
 		}
 

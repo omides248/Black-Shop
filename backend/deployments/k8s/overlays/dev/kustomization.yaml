@@ -1,0 +1,8 @@
+resources:
+  - ../../base
+
+patches:
+  - path: replicas-patch.yaml
+    target:
+      kind: Deployment
+      name: catalog-deployment

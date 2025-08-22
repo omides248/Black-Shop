@@ -8,20 +8,21 @@ services:
       - ../pkg:/go/src/pkg
       - go-mod-cache:/go/pkg/mod
       - go-build-cache:/root/.cache/go-build
+      - ${APP_STORAGE_PATH}:${APP_STORAGE_PATH}/public
     working_dir: /go/src/catalog
-    stdin_open: true # Keep stdin open to allow manual input
-    tty: true        # Allocate a pseudo-TTY
+    stdin_open: true
+    tty: true
     user: "root"
     ports:
       - "8080:8080"
       - "50051:50051"
     depends_on:
-      - otel-collector
+#      - otel-collector
       - mongo
       - postgres
       - redis
     networks:
-      - otel-network
+      - blackshop-network
 
   mongo:
     image: mongo
@@ -39,7 +40,7 @@ services:
           memory: 768M
           cpus: "0.75"
     networks:
-      - otel-network
+      - blackshop-network
 
   postgres:
     image: postgres
@@ -58,7 +59,7 @@ services:
           memory: 1G
           cpus: "1.0"
     networks:
-      - otel-network
+      - blackshop-network
 
   redis:
     image: redis
@@ -73,46 +74,45 @@ services:
           memory: 256M
           cpus: "0.25"
     networks:
-      - otel-network
+      - blackshop-network
 
-  # Observability Services
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.132.0
-    container_name: otel-collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - "4317:4317" # OTLP gRPC receiver
-      - "8889:8889" # Prometheus exporter
-    networks:
-      - otel-network
-
-  prometheus:
-    image: prom/prometheus:v2.55.1
-    container_name: prometheus
-    command:
-      - --config.file=/etc/prometheus.yaml
-      - --storage.tsdb.path=/prometheus
-    volumes:
-      - ./prometheus.yaml:/etc/prometheus.yaml
-      - prometheus-data:/prometheus
-    ports:
-      - "9090:9090"
-    networks:
-      - otel-network
-
-  grafana:
-    image: grafana/grafana:11.5.8
-    container_name: grafana
-    ports:
-      - "3000:3000"
-#    environment:
-#      - GF_SERVER_HTTP_ADDR=0.0.0.0
-    volumes:
-      - grafana-data:/var/lib/grafana
-    networks:
-      - otel-network
+#  otel-collector:
+#    image: otel/opentelemetry-collector-contrib:0.132.0
+#    container_name: otel-collector
+#    command: ["--config=/etc/otel-collector-config.yaml"]
+#    volumes:
+#      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+#    ports:
+#      - "4317:4317" # OTLP gRPC receiver
+#      - "8889:8889" # Prometheus exporter
+#    networks:
+#      - blackshop-network
+#
+#  prometheus:
+#    image: prom/prometheus:v2.55.1
+#    container_name: prometheus
+#    command:
+#      - --config.file=/etc/prometheus.yaml
+#      - --storage.tsdb.path=/prometheus
+#    volumes:
+#      - ./prometheus.yaml:/etc/prometheus.yaml
+#      - prometheus-data:/prometheus
+#    ports:
+#      - "9090:9090"
+#    networks:
+#      - blackshop-network
+#
+#  grafana:
+#    image: grafana/grafana:11.5.8
+#    container_name: grafana
+#    ports:
+#      - "3000:3000"
+##    environment:
+##      - GF_SERVER_HTTP_ADDR=0.0.0.0
+#    volumes:
+#      - grafana-data:/var/lib/grafana
+#    networks:
+#      - blackshop-network
 
 volumes:
   mongo-data:
@@ -123,7 +123,8 @@ volumes:
   prometheus-data:
   go-mod-cache:
   go-build-cache:
+  blackshop-data-volume:
 
 networks:
-  otel-network:
+  blackshop-network:
     driver: bridge
