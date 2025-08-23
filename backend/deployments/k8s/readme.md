@@ -87,3 +87,34 @@ kubectl -n kubernetes-dashboard create token admin-user
 # 3. Run
 kubectl -n kubernetes-dashboard port-forward svc/kubernetes-dashboard-kong-proxy 8443:443 --address 0.0.0.0
 
+# --------------------- Install MinIO ---------------------
+
+# 1. Download the MinIO RPM
+wget https://dl.min.io/server/minio/release/linux-amd64/minio_20250723155402.0.0_amd64.deb -O minio.deb
+sudo dpkg -i minio.deb
+
+mkdir -p /mnt/disk1/minio
+chown -R minio-user:minio-user /mnt/disk1/
+
+nano /etc/default/minio
+--->
+## Volume to be used for MinIO server.
+MINIO_VOLUMES="/mnt/disk1/minio"
+
+## Use if you want to run MinIO on a custom port.
+#MINIO_OPTS="--address :9198 --console-address :9199"
+
+## Root user for the server.
+MINIO_ROOT_USER=minioadmin
+
+## Root secret for the server.
+MINIO_ROOT_PASSWORD=minioadmin123123
+
+## set this for MinIO to reload entries with 'mc admin service restart'
+#MINIO_CONFIG_ENV_FILE=/etc/default/minio
+<---
+
+systemctl start minio
+
+# --------------------- Connect to pods cli ---------------------
+kubectl exec -it catalog-deployment-7b46c7664d-6gb88 -- /bin/sh
