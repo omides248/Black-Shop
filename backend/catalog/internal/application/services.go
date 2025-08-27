@@ -30,8 +30,9 @@ type ProductService interface {
 }
 
 type CategoryService interface {
-	CreateCategory(ctx context.Context, name string, image, parentID *string) (*domain.Category, error)
+	CreateCategory(ctx context.Context, name string, image, slug, parentID *string) (*domain.Category, error)
 	UpdateCategory(ctx context.Context, category *domain.Category) error
 	GetAllCategories(ctx context.Context) ([]*domain.Category, error)
 	FindByID(ctx context.Context, id domain.CategoryID) (*domain.Category, error)
+	FindBySlug(ctx context.Context, slug string) (*domain.Category, error)
 }

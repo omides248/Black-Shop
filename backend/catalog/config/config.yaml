@@ -9,10 +9,10 @@ database:
   mongo_uri: "mongodb://omides248:123123@192.168.8.140:27017/?authSource=admin"
 
 minio:
-  endpoint: "localhost:9000"
+  endpoint: "192.168.8.140:9000"
   access_key: "minioadmin"
-  secret_key: "minioadmin"
-  public_url: "http://localhost:9000"
+  secret_key: "minioadmin123123"
+  public_url: "http://192.168.8.140:9000"
 
 local_storage:
   public_storage_path: "/var/lib/blackshop/storage/public"

@@ -22,7 +22,7 @@ func NewCategoryService(catRepo domain.CategoryRepository, prodRepo domain.Produ
 	}
 }
 
-func (s *categoryService) CreateCategory(ctx context.Context, name string, image, parentID *string) (*domain.Category, error) {
+func (s *categoryService) CreateCategory(ctx context.Context, name string, image, slug, parentID *string) (*domain.Category, error) {
 	s.logger.Info("creating a new category", zap.String("name", name))
 
 	// Rule 1: Limit Depth
@@ -37,7 +37,7 @@ func (s *categoryService) CreateCategory(ctx context.Context, name string, image
 		return nil, err
 	}
 
-	newCategory, err := domain.NewCategory(name, image, parentCategory)
+	newCategory, err := domain.NewCategory(name, image, slug, parentCategory)
 	if err != nil {
 		s.logger.Warn("failed to create new object category from domain factory", zap.String("name", name))
 		return nil, err
@@ -74,6 +74,17 @@ func (s *categoryService) FindByID(ctx context.Context, id domain.CategoryID) (*
 	category, err := s.categoryRepo.FindByID(ctx, id)
 	if err != nil {
 		s.logger.Warn("failed to find category", zap.String("id", string(id)))
+		return nil, err
+	}
+	s.logger.Info("category found successfully", zap.String("category_id", string(category.ID)))
+	return category, nil
+}
+
+func (s *categoryService) FindBySlug(ctx context.Context, slug string) (*domain.Category, error) {
+	s.logger.Info("getting category by slug", zap.String("slug", slug))
+	category, err := s.categoryRepo.FindBySlug(ctx, slug)
+	if err != nil {
+		s.logger.Warn("failed to find category by slug", zap.String("slug", slug))
 		return nil, err
 	}
 	s.logger.Info("category found successfully", zap.String("category_id", string(category.ID)))

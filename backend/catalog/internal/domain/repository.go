@@ -13,6 +13,7 @@ type CategoryRepository interface {
 	FindAll(ctx context.Context) ([]*Category, error)
 	HasChildren(ctx context.Context, id CategoryID) (bool, error)
 	FindByNameAndParentID(ctx context.Context, name string, parentID *CategoryID) (*Category, error)
+	FindBySlug(ctx context.Context, slug string) (*Category, error)
 }
 
 type ProductRepository interface {

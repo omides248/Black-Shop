@@ -5,11 +5,12 @@ import (
 	"catalog/internal/domain"
 	"context"
 	"errors"
+	"time"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.uber.org/zap"
-	"time"
 )
 
 type categoryRepo struct {
@@ -41,7 +42,21 @@ func ensureCategoryIndexes(ctx context.Context, collection *mongo.Collection) er
 	}
 	_, err := collection.Indexes().CreateOne(ctx, indexModel)
 	if err != nil {
+		return err
 	}
+
+	slugIndexModel := mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "slug", Value: 1},
+		},
+		Options: options.Index().SetUnique(true).SetSparse(true),
+	}
+
+	_, err = collection.Indexes().CreateOne(ctx, slugIndexModel)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -50,6 +65,7 @@ func (r *categoryRepo) Create(ctx context.Context, category *domain.Category) er
 
 	mc := model.MongoCategory{
 		Name:      category.Name,
+		Slug:      category.Slug,
 		Image:     category.Image,
 		ParentID:  category.ParentID,
 		Depth:     category.Depth,
@@ -166,6 +182,33 @@ func (r *categoryRepo) FindAll(ctx context.Context) ([]*domain.Category, error) 
 	}
 
 	return categories, cursor.Err()
+}
+
+func (r *categoryRepo) FindBySlug(ctx context.Context, slug string) (*domain.Category, error) {
+
+	r.logger.Info("finding category by slug", zap.String("slug", slug))
+
+	var mc model.MongoCategory
+	filter := bson.M{"slug": slug}
+
+	if err := r.collection.FindOne(ctx, filter).Decode(&mc); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			r.logger.Warn("category not found by slug", zap.String("slug", slug))
+			return nil, domain.ErrCategoryNotFound
+		}
+		r.logger.Error("failed to find category by slug", zap.Error(err))
+	}
+
+	return &domain.Category{
+		ID:        domain.CategoryID(mc.ID.Hex()),
+		Name:      mc.Name,
+		Image:     mc.Image,
+		Slug:      mc.Slug,
+		ParentID:  mc.ParentID,
+		Depth:     mc.Depth,
+		CreatedAt: mc.CreatedAt,
+		UpdatedAt: mc.UpdatedAt,
+	}, nil
 }
 
 func (r *categoryRepo) HasChildren(ctx context.Context, id domain.CategoryID) (bool, error) {

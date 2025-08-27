@@ -8,6 +8,7 @@ import (
 type Category struct {
 	ID        CategoryID
 	Name      string
+	Slug      *string
 	Image     *string
 	ParentID  *CategoryID
 	Depth     int
@@ -15,7 +16,7 @@ type Category struct {
 	UpdatedAt time.Time
 }
 
-func NewCategory(name string, image *string, parentCategory *Category) (*Category, error) {
+func NewCategory(name string, image *string, slug *string, parentCategory *Category) (*Category, error) {
 
 	if name == "" {
 		return nil, errors.New("category name cannot be empty")
@@ -30,9 +31,10 @@ func NewCategory(name string, image *string, parentCategory *Category) (*Categor
 
 	return &Category{
 		Name:      name,
+		Slug:      slug,
+		Image:     image,
 		ParentID:  parentID,
 		Depth:     depth,
-		Image:     image,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}, nil

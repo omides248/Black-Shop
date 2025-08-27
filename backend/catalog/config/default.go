@@ -7,10 +7,10 @@ var (
 	DefaultGRPCAddr = "127.0.0.1:50051"
 	DefaultHost     = "192.168.8.140:8080"
 
-	DefaultMinIOEndpoint  = "localhost:9000"
+	DefaultMinIOEndpoint  = "192.168.8.140:9000"
 	DefaultMinIOAccessKey = "minioadmin"
-	DefaultMinIOSecretKey = "minioadmin"
-	DefaultMinIOPublicURL = "http://localhost:9000"
+	DefaultMinIOSecretKey = "minioadmin123123"
+	DefaultMinIOPublicURL = "http://192.168.8.140:9000"
 
 	DefaultMongoURI = "mongodb://omides248:123123@192.168.8.140:27017/?authSource=admin"
 

@@ -3,10 +3,12 @@ package validation
 import (
 	"errors"
 	"fmt"
-	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"mime/multipart"
+	"net/http"
 	"path/filepath"
 	"strings"
+
+	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 func ImageRule(maxSize int64, allowedExtensions []string) ozzo.RuleFunc {
@@ -34,4 +36,17 @@ func ImageRule(maxSize int64, allowedExtensions []string) ozzo.RuleFunc {
 
 		return nil
 	}
+}
+
+func GetFileContentType(file multipart.File) (string, error) {
+	buffer := make([]byte, 512)
+	_, err := file.Read(buffer)
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := file.Seek(0, 0); err != nil {
+		return "", err
+	}
+	return http.DetectContentType(buffer), nil
 }
