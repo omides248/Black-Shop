@@ -3,12 +3,18 @@ module pkg
 go 1.24.5
 
 require (
+	github.com/btcsuite/btcd v0.24.2
+	github.com/btcsuite/btcd/btcutil v1.1.6
+	github.com/cosmos/go-bip39 v1.0.0
+	github.com/ethereum/go-ethereum v1.16.2
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/matryer/is v1.4.1
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/spf13/viper v1.20.1
+	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/webstradev/echo-pagination v1.1.1
 	go.mongodb.org/mongo-driver/v2 v2.2.3
 	go.uber.org/zap v1.27.0
@@ -16,12 +22,15 @@ require (
 )
 
 require (
+	github.com/btcsuite/btcd/btcec/v2 v2.1.3 // indirect
+	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
-	github.com/google/uuid v1.6.0 // indirect
+	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.11 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect

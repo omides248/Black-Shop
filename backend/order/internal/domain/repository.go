@@ -4,8 +4,10 @@ import "context"
 
 type OrderRepository interface {
 	Save(ctx context.Context, order *Order) error
+	Update(ctx context.Context, order *Order) error
 	FindByID(ctx context.Context, id OrderID) (*Order, error)
 	FindByUserID(ctx context.Context, userID string) ([]*Order, error)
+	FindAwaitingPayment(ctx context.Context, limit, offset int) ([]*Order, error)
 }
 
 type CartRepository interface {

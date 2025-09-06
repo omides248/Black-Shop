@@ -4,6 +4,7 @@ import (
 	"catalog/internal/adapters/storage/mongodb"
 	"catalog/internal/domain"
 	"fmt"
+
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.uber.org/zap"
 )

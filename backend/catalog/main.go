@@ -3,7 +3,7 @@ package main
 import (
 	"catalog/config"
 	"catalog/internal/adapters"
-	"catalog/internal/application"
+	"catalog/internal/application/services"
 	"catalog/internal/delivery/http/error_mapping"
 	"context"
 	"errors"
@@ -116,7 +116,7 @@ func run(ctx context.Context, cfg *config.Config, appLogger *zap.Logger) error {
 	//}
 
 	// --- Application Services ---
-	service := application.NewService(adapter.ProductRepo, adapter.CategoryRepo, appLogger)
+	service := services.NewService(adapter.ProductRepo, adapter.CategoryRepo, appLogger)
 
 	grpcServerDeps := grpcserver.ServerDependencies{
 		ProductService:  service.ProductService,
@@ -174,7 +174,7 @@ func runGRPCServer(port string, handler pb.CatalogServiceServer, appLogger *zap.
 	return gRPCServer.Serve(lis)
 }
 
-func runHTTPServer(port string, catSvc application.CategoryService, prodSvc application.ProductService, minioService *minio.Service, cfg *config.Config, appLogger *zap.Logger) error {
+func runHTTPServer(port string, catSvc services.CategoryService, prodSvc services.ProductService, minioService *minio.Service, cfg *config.Config, appLogger *zap.Logger) error {
 	appLogger.Info("starting HTTP (Echo) server...", zap.String("port", port))
 	e := echo.New()
 

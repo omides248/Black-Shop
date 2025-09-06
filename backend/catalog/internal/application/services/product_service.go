@@ -1,8 +1,9 @@
-package application
+package services
 
 import (
 	"catalog/internal/domain"
 	"context"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.uber.org/zap"
 )
